@@ -72,8 +72,11 @@ def tokenize(control_string):
     while a:
         char = a.popleft()
         if char=="~":
-            out.append(parse_directive(a))
-            out.append("")
+            if out[-1]=='':
+                out[-1] = parse_directive(a)
+            else:
+                out.append(parse_directive(a))
+            out.append('')
         else:
             out[-1] += char
     return out
@@ -101,7 +104,10 @@ def build_tree(token_list):
                 char = tl[0][0]
                 if char in pair_directives:
                     current = parent.add_child(tl.popleft())
-                    # search forward for closing directive
+                    # search forward for closing directive be carefull
+                    # here as there may be nested directives of the
+                    # same type
+                    nested_count = 0
                     closing_char = compliment[char]
                     child_tokens = [] # collect children & call build_tree()
                     looking = True
@@ -112,10 +118,17 @@ def build_tree(token_list):
                         if type(tl[0])==str:            #  string node
                             child_tokens.append(tl.popleft())
                         else:                           #  directive node
-                            char=tl[0][0]
-                            if char == closing_char:
-                                tl.popleft()
-                                looking = False
+                            nested_char = tl[0][0]
+                            if nested_char == char:
+                                nested_count += 1
+                                child_tokens.append(tl.popleft())
+                            elif nested_char == closing_char:
+                                if nested_count == 0:
+                                    tl.popleft()  #  drop the closing directives
+                                    looking = False
+                                else:
+                                    child_tokens.append(tl.popleft())
+                                    nested_count -= 1
                             else:
                                 child_tokens.append(tl.popleft())
                     build_tree(current, deque(child_tokens))
@@ -167,6 +180,7 @@ if __name__ == '__main__':
 
     clformat("~{~a~#[~;, and ~:;, ~]~}", [1,2,3])
     clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
+
 
     import doctest
     #doctest.testmod(test)
