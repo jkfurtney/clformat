@@ -97,6 +97,9 @@ def build_tree(token_list):
     compliment = {"[":"]", "{":"}", "(":")", "<":">"}
 
     def build_tree(parent, tl):
+        """This function is called recursively to transform the token list
+        into a tree.
+        """
         while len(tl):
             if type(tl[0])==str:                        #  string node
                 parent.add_child(tl.popleft())
@@ -155,7 +158,6 @@ def print_tree(tree):
     print_node(tree, 0)
 
 def clformat(control_string, *args):
-    # out is not a list of strings and tuples representing
     token_list = tokenize(control_string)
     pprint(token_list)
     tree = build_tree(token_list)

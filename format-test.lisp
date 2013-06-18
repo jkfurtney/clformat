@@ -1,6 +1,6 @@
 (defmacro with-testfile-output (&body body)
-  "This macro creates a dummy python function with doctest format
-tests."
+  "This macro creates a dummy Python function with doctest format
+tests. The tests are defined by the format test-macro"
   `(with-open-file (fsc-tmp (namestring "test.py")
                            :direction :output :if-exists :supersede)
      (let ((*standard-output* fsc-tmp))
@@ -11,7 +11,9 @@ tests."
        (princ "    \"\"\" "))))
 
 (defmacro format-test (fmt-string &body fmt-args)
-  "Wraps calls to format to create python tests."
+  "Wraps calls to format to create python tests. Each call to
+format-test creates an individual Python test. The expected result is
+found by evaluating the format expression in lisp."
   `(let ((result (format nil ,fmt-string ,@fmt-args)))
      (fresh-line)
      (format t ">>> clformat(~s, ~{~s~^, ~})~%" ,fmt-string '(,@fmt-args))
@@ -49,14 +51,24 @@ tests."
 
   (defparameter *english-list*
     "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
+  (format-test *english-list* (list ))
+  (format-test *english-list* (list 1))
+  (format-test *english-list* (list 1 2))
+  (format-test *english-list* (list 1 2 3))
+  (format-test *english-list* (list 1 2 3 4))
 
-  (defparameter *my-english-list* (concatenate 'string *english-list* "~%"))
 
-  (format-test *my-english-list* (list ))
-  (format-test *my-english-list* (list 1))
-  (format-test *my-english-list* (list 1 2))
-  (format-test *my-english-list* (list 1 2 3))
-  (format-test *my-english-list* (list 1 2 3 4))
+  (format-test "~(~a~)" "sTring wiTH MiXed CAPs")
+  (format-test "~@(~a~)" "sTring wiTH MiXed CAPs")
+  (format-test "~:(~a~)" "sTring wiTH MiXed CAPs")
+  (format-test "~:@(~a~)" "sTring wiTH MiXed CAPs")
+
+  (defparameter *list-etc*
+    "~#[NONE~;~a~;~a and ~a~:;~a, ~a~]~#[~; and ~a~:;, ~a, etc~].")
+  (format-test *list-etc* 1)
+  (format-test *list-etc* 1 2)
+  (format-test *list-etc* 1 2 3)
+  (format-test *list-etc* 1 2 3 4)
 
   (defparameter *compiler-format-string*
     "Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.")
