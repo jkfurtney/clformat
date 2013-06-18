@@ -29,16 +29,13 @@ def parse_prefix_arg(a):
 def parse_prefix_arg_list(a):
     "return list of prefix args"
     prefix_args=[None,None,None,None]
-
     arg = parse_prefix_arg(a)
     if arg: prefix_args[0]=arg
-
     for i in range(1,4):
         if a[0]==",":
             a.popleft()
             arg = parse_prefix_arg(a)
             if arg: prefix_args[i]=arg
-
     return prefix_args
 
 def parse_directive_modifiers(a):
@@ -130,11 +127,26 @@ def build_tree(token_list):
     build_tree(top,tl)
     return top
 
+def print_tree(tree):
+    def print_node(node, depth):
+        print depth,
+        if node.value is None:
+            print "Top"
+        elif type(node.value)==str:
+            print "'%s'" % (node.value[:60])
+        else:
+            print "<directive %s>" % (node.value[0],)
+        for child_node in node.children:
+            print_node(child_node,depth+1)
+
+    print_node(tree, 0)
+
 def clformat(control_string, *args):
     # out is not a list of strings and tuples representing
     token_list = tokenize(control_string)
     pprint(token_list)
     tree = build_tree(token_list)
+    print_tree(tree)
     return tree
 
 if __name__ == '__main__':
@@ -151,7 +163,10 @@ if __name__ == '__main__':
     print clformat("This is a hex number ~5x", 10)
     print clformat("~,,'.,4d", 36456096)
     print clformat("this is just a string")
-    pprint(clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3))
+    clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3)
+
+    clformat("~{~a~#[~;, and ~:;, ~]~}", [1,2,3])
+    clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 
     import doctest
     #doctest.testmod(test)
