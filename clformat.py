@@ -13,7 +13,9 @@ def d(prefix_parameters, colon_modifier, at_modifier, argument,
 # ints dxobr
 
 def parse_prefix_arg(a):
-    "look for a single prefix argument"
+    """look for a single prefix argument. This can be v, #, a positive or
+    integer or a single character prefixed by a ' (single quote)
+    """
     s="".join(a)
     mobj = re.match(r"([+-]?[0-9]+|v|#|'.)",s)
     if mobj:
@@ -23,7 +25,7 @@ def parse_prefix_arg(a):
     else:
         return None
 
-def parse_prefix_args(a):
+def parse_prefix_arg_list(a):
     "return list of prefix args"
     prefix_args=[None,None,None,None]
 
@@ -55,12 +57,12 @@ def parse_directive_modifiers(a):
     return colon_modifier, at_modifier
 
 def parse_directive_type(a):
-    if a[0] in "%&|t<>c()dboxrpfeg$as~":
+    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];":
         return a.popleft()
     raise Exception("unknown directive type %s", a[0])
 
 def parse_directive(a):
-    prefix_args = parse_prefix_args(a)
+    prefix_args = parse_prefix_arg_list(a)
     colon_modifier, at_modifier  = parse_directive_modifiers(a)
     directive_type = parse_directive_type(a)
     return (prefix_args, colon_modifier, at_modifier, directive_type)
@@ -75,20 +77,24 @@ def clformat(control_string, *args):
             out.append("")
         else:
             out[-1] += char
+    # out is not a list of strings and t
+
     return out
 
 if __name__ == '__main__':
-    assert parse_prefix_args(deque(",,'.,4d"))==[None, None, "'.", '4']
-    assert parse_prefix_args(deque("-2,-4:@x"))==['-2', '-4', None, None]
-    assert parse_prefix_args(deque("v,'^,#,-302':@x"))==['v',"'^","#",'-302']
-    print parse_prefix_args(deque("'2,-4:@x"))
-    print parse_prefix_args(deque("x,-4:@x"))
+    assert parse_prefix_arg_list(deque(",,'.,4d"))==[None, None, "'.", '4']
+    assert parse_prefix_arg_list(deque("-2,-4:@x"))==['-2', '-4', None, None]
+    assert parse_prefix_arg_list(deque("v,'^,#,-302':@x"))==  \
+        ['v',"'^","#",'-302']
+    assert parse_prefix_arg_list(deque("'2,-4:@x"))==["'2",'-4',None,None]
+
 
     print clformat("~3,-4:@x", 10)
     print clformat("This is a hex number ~5x", 10)
     print clformat("~,,'.,4d", 36456096)
     print clformat("this is just a string")
-
+    from pprint import pprint
+    print pprint(clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3))
 
     import doctest
     #doctest.testmod(test)
