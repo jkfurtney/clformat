@@ -66,10 +66,9 @@ def clformat(control_string, *args):
     print args
 
 if __name__ == '__main__':
-    print parse_prefix_args(deque(",,'.,4d"))
-
-    print parse_prefix_args(deque("-2,-4:@x"))
-    print parse_prefix_args(deque("2,-4:@x"))
+    assert parse_prefix_args(deque(",,'.,4d"))==[None, None, "'.", '4']
+    assert parse_prefix_args(deque("-2,-4:@x"))==['-2', '-4', None, None]
+    assert parse_prefix_args(deque("v,'^,#,-302':@x"))==['v',"'^","#",'-302']
     print parse_prefix_args(deque("'2,-4:@x"))
     print parse_prefix_args(deque("x,-4:@x"))
     1/0
