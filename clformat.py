@@ -1,3 +1,4 @@
+from pprint import pprint
 from collections import deque
 import test
 import re
@@ -65,9 +66,10 @@ def parse_directive(a):
     prefix_args = parse_prefix_arg_list(a)
     colon_modifier, at_modifier  = parse_directive_modifiers(a)
     directive_type = parse_directive_type(a)
-    return (prefix_args, colon_modifier, at_modifier, directive_type)
+    return (directive_type, prefix_args, colon_modifier, at_modifier)
 
-def clformat(control_string, *args):
+
+def tokenize(control_string):
     a=deque(control_string)
     out=['']
     while a:
@@ -77,11 +79,67 @@ def clformat(control_string, *args):
             out.append("")
         else:
             out[-1] += char
-    # out is not a list of strings and t
-
     return out
 
+class Node(object):
+    """Represent a node in the syntax tree of the format language """
+    def __init__(self, parent, value):
+        self.parent = parent
+        self.children = []
+        self.value = value
+    def add_child(self, child_value):
+        self.children.append(Node(self, child_value))
+        return self.children[-1]
+
+
+def build_tree(token_list):
+    pair_directives = "[<({"
+    compliment = {"[":"]", "{":"}", "(":")", "<":">"}
+
+    def build_tree(parent, tl):
+        while len(tl):
+            if type(tl[0])==str:                        #  string node
+                parent.add_child(tl.popleft())
+            else:                                       #  directive node
+                char = tl[0][0]
+                if char in pair_directives:
+                    current = parent.add_child(tl.popleft())
+                    # search forward for closing directive
+                    closing_char = compliment[char]
+                    child_tokens = [] # collect children & call build_tree()
+                    looking = True
+                    while looking:
+                        if len(tl)==0:
+                            raise Exception("End of format string before \
+                                             finding closing %s" % closing_char)
+                        if type(tl[0])==str:            #  string node
+                            child_tokens.append(tl.popleft())
+                        else:                           #  directive node
+                            char=tl[0][0]
+                            if char == closing_char:
+                                tl.popleft()
+                                looking = False
+                            else:
+                                child_tokens.append(tl.popleft())
+                    build_tree(current, deque(child_tokens))
+                else:                                   #  normal directive
+                    parent.add_child(tl.popleft())
+
+    top = Node(None, None)
+    tl = deque(token_list)
+    build_tree(top,tl)
+    return top
+
+def clformat(control_string, *args):
+    # out is not a list of strings and tuples representing
+    token_list = tokenize(control_string)
+    pprint(token_list)
+    tree = build_tree(token_list)
+    return tree
+
 if __name__ == '__main__':
+
+
     assert parse_prefix_arg_list(deque(",,'.,4d"))==[None, None, "'.", '4']
     assert parse_prefix_arg_list(deque("-2,-4:@x"))==['-2', '-4', None, None]
     assert parse_prefix_arg_list(deque("v,'^,#,-302':@x"))==  \
@@ -93,8 +151,7 @@ if __name__ == '__main__':
     print clformat("This is a hex number ~5x", 10)
     print clformat("~,,'.,4d", 36456096)
     print clformat("this is just a string")
-    from pprint import pprint
-    print pprint(clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3))
+    pprint(clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3))
 
     import doctest
     #doctest.testmod(test)
