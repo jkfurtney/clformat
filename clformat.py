@@ -13,6 +13,7 @@ def d(prefix_parameters, colon_modifier, at_modifier, argument,
 # ints dxobr
 
 def parse_prefix_arg(a):
+    "look for a single prefix argument"
     s="".join(a)
     mobj = re.match(r"([+-]?[0-9]+|v|#|'.)",s)
     if mobj:
@@ -26,44 +27,55 @@ def parse_prefix_args(a):
     "return list of prefix args"
     prefix_args=[None,None,None,None]
 
-    arg0 = parse_prefix_arg(a)
-    if arg0: prefix_args[0]=arg0
+    arg = parse_prefix_arg(a)
+    if arg: prefix_args[0]=arg
 
-    if a[0]==",":
-        a.popleft()
-        arg1 = parse_prefix_arg(a)
-        if arg1: prefix_args[1]=arg1
-    if a[0]==",":
-        a.popleft()
-        arg2= parse_prefix_arg(a)
-        if arg2: prefix_args[2] = arg2
-    if a[0]==",":
-        a.popleft()
-        arg3= parse_prefix_arg(a)
-        if arg3: prefix_args[3] = arg3
+    for i in range(1,4):
+        if a[0]==",":
+            a.popleft()
+            arg = parse_prefix_arg(a)
+            if arg: prefix_args[i]=arg
+
     return prefix_args
+
+def parse_directive_modifiers(a):
+    colon_modifier, at_modifier = False, False
+    if a[0]==":" or a[0]=="@":
+        if a.popleft()==":":
+            colon_modifier=True
+        else:
+            at_modifier=True
+    if a[0]==":" or a[0]=="@":
+        if a.popleft()==":":
+            if colon_modifier: raise Exception("More than one : in directive")
+            colon_modifier=True
+        else:
+            if at_modifier: raise Exception("More than one @ in directive")
+            at_modifier=True
+    return colon_modifier, at_modifier
+
+def parse_directive_type(a):
+    if a[0] in "%&|t<>c()dboxrpfeg$as~":
+        return a.popleft()
+    raise Exception("unknown directive type %s", a[0])
 
 def parse_directive(a):
     prefix_args = parse_prefix_args(a)
-    colon_modifier = False
-    at_modifier = False
-
-    s="".join(a)
-    mobj=re.match(r"(:|@)(:|@)([dxobr])",s)
-    print mobj.groups()
+    colon_modifier, at_modifier  = parse_directive_modifiers(a)
+    directive_type = parse_directive_type(a)
+    return (prefix_args, colon_modifier, at_modifier, directive_type)
 
 def clformat(control_string, *args):
-    print control_string
     a=deque(control_string)
-    out=[]
+    out=['']
     while a:
         char = a.popleft()
         if char=="~":
-            parse_directive(a)
+            out.append(parse_directive(a))
+            out.append("")
         else:
-            out.append(char)
-
-    print args
+            out[-1] += char
+    return out
 
 if __name__ == '__main__':
     assert parse_prefix_args(deque(",,'.,4d"))==[None, None, "'.", '4']
@@ -71,10 +83,11 @@ if __name__ == '__main__':
     assert parse_prefix_args(deque("v,'^,#,-302':@x"))==['v',"'^","#",'-302']
     print parse_prefix_args(deque("'2,-4:@x"))
     print parse_prefix_args(deque("x,-4:@x"))
-    1/0
-    clformat("~3,-4:@x")
-    clformat("~5x")
-    clformat("~,,'.,4d")
+
+    print clformat("~3,-4:@x", 10)
+    print clformat("This is a hex number ~5x", 10)
+    print clformat("~,,'.,4d", 36456096)
+    print clformat("this is just a string")
 
 
     import doctest
