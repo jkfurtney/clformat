@@ -3,16 +3,6 @@ from collections import deque
 import test
 import re
 
-# directive, v, # special cases
-
-def d(prefix_parameters, colon_modifier, at_modifier, argument,
-      arg_list, arg_index):
-    """
-    process directive d
-    """
-# up to four prefix arguments
-# ints dxobr
-
 def parse_prefix_arg(a):
     """look for a single prefix argument. This can be v, #, a positive or
     integer or a single character prefixed by a ' (single quote)
@@ -55,7 +45,7 @@ def parse_directive_modifiers(a):
     return colon_modifier, at_modifier
 
 def parse_directive_type(a):
-    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];":
+    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];^":
         return a.popleft()
     raise Exception("unknown directive type %s", a[0])
 
@@ -64,7 +54,6 @@ def parse_directive(a):
     colon_modifier, at_modifier  = parse_directive_modifiers(a)
     directive_type = parse_directive_type(a)
     return (directive_type, prefix_args, colon_modifier, at_modifier)
-
 
 def tokenize(control_string):
     a=deque(control_string)
@@ -91,14 +80,15 @@ class Node(object):
         self.children.append(Node(self, child_value))
         return self.children[-1]
 
-
 def build_tree(token_list):
     pair_directives = "[<({"
     compliment = {"[":"]", "{":"}", "(":")", "<":">"}
 
     def build_tree(parent, tl):
         """This function is called recursively to transform the token list
-        into a tree.
+        into a tree. The paired directives created a nested tree of
+        strings and directives.
+
         """
         while len(tl):
             if type(tl[0])==str:                        #  string node
@@ -143,30 +133,109 @@ def build_tree(token_list):
     build_tree(top,tl)
     return top
 
-def print_tree(tree):
-    def print_node(node, depth):
-        print depth,
-        if node.value is None:
-            print "Top"
-        elif type(node.value)==str:
-            print "'%s'" % (node.value[:60])
-        else:
-            print "<directive %s>" % (node.value[0],)
-        for child_node in node.children:
-            print_node(child_node,depth+1)
 
-    print_node(tree, 0)
+class CompiledCLFormatControlString(object):
+    def __init__(self, tree, control_string):
+        self.tree = tree
+        self.control_string = control_string
+
+    def print_tree(self):
+        """
+        for bebugging tree
+        """
+        def print_node(node, depth):
+            print depth,
+            if node.value is None:
+                print "Top"
+            elif type(node.value)==str:
+                print "'%s'" % (node.value[:60])
+            else:
+                print "<directive %s>" % (node.value[0],)
+            for child_node in node.children:
+                print_node(child_node,depth+1)
+
+        print_node(self.tree, 0)
+    def __repr__(self):
+        return "CLFormat Compiles Control String: %s" % self.control_string
+
+    def __call__(self, args):
+        directive_functions = {'a':a, 'x':x, 'd':d}
+        args = ArgumentList(args)
+        output=[]
+        def process_node(node, output):
+            if type(node.value)==str:
+                output.append(node.value)
+            else:
+                if node.value:       # process directive
+                    directive = node.value[0]
+                    if directive in directive_functions:
+                        output.append(directive_functions[directive](args))
+                    else:
+                        output.append(directive)
+                for child_node in node.children:
+                    process_node(child_node, output)
+
+        process_node(self.tree, output)
+        return output
+
+
+class ArgumentList(object):
+    """ Store and manipulate the argument list to clformat.
+    """
+    def __init__(self,args):
+        self.data=deque(args)
+        self.used_data = deque()
+    def __len__(self):
+        return len(self.data)
+    def popleft(self):
+        item = self.data.popleft()
+        self.used_data.append(item)
+        return item
+    def empty(self):
+        if len(self.data)==0: return True
+        else: return False
+    def rewind(self,n):
+        assert type(n)==int and n>=0
+        if len(self.used_data)<n:
+            raise Exception("Can't rewind argument list, not enought arguments")
+        for i in range(n):
+            self.data.appendleft(self.used_data.pop())
+
+
+# directive functions
+
+def d(args):
+    """
+    process directive d
+    """
+    return "%i" % args.popleft()
+
+def a(args):
+    """
+    """
+    return str(args.popleft())
+
+def x(args):
+    """
+    """
+    return "%x" % args.popleft()
+
+# ints dxobr
+
 
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
-    pprint(token_list)
+    #pprint(token_list)
     tree = build_tree(token_list)
-    print_tree(tree)
-    return tree
+    cfmt = CompiledCLFormatControlString(tree, control_string)
+    #cfmt.print_tree()
+    #cfmt(args)
+    #print cfmt
+    ret = "".join(cfmt(args))
+    print ret
+    #return ret
 
 if __name__ == '__main__':
-
-
     assert parse_prefix_arg_list(deque(",,'.,4d"))==[None, None, "'.", '4']
     assert parse_prefix_arg_list(deque("-2,-4:@x"))==['-2', '-4', None, None]
     assert parse_prefix_arg_list(deque("v,'^,#,-302':@x"))==  \
@@ -174,15 +243,16 @@ if __name__ == '__main__':
     assert parse_prefix_arg_list(deque("'2,-4:@x"))==["'2",'-4',None,None]
 
 
-    print clformat("~3,-4:@x", 10)
-    print clformat("This is a hex number ~5x", 10)
-    print clformat("~,,'.,4d", 36456096)
-    print clformat("this is just a string")
+    clformat("~3,-4:@x", 101)
+    clformat("0x0~3,-4:@x", 10350)
+    clformat("This is a hex number ~5x", 10)
+    clformat("~,,'.,4d", 36456096)
+    clformat("this is just a string")
     clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3)
 
-    clformat("~{~a~#[~;, and ~:;, ~]~}", [1,2,3])
-    clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
+    # clformat("~{~a~#[~;, and ~:;, ~]~}",  [1,2,3])
+    #clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 
 
     import doctest
-    #doctest.testmod(test)
+    doctest.testmod(test)

@@ -20,7 +20,7 @@ String "Simon" in a string
 >>> clformat("String ~a in a string~%", "Simon")
 String Simon in a string
 
->>> clformat("~{~&~VD~}", '(5 37 10 253 15 9847 10 559 5 12))
+>>> clformat("~{~&~vd~}", '(5 37 10 253 15 9847 10 559 5 12))
    37
        253
            9847
@@ -98,12 +98,12 @@ STRING WITH MIXED CAPS
 1, 2 and 3.
 >>> clformat("~#[NONE~;~a~;~a and ~a~:;~a, ~a~]~#[~; and ~a~:;, ~a, etc~].", 1, 2, 3, 4)
 1, 2, 3, etc.
->>> clformat("Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.", 0, 0)
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 0, 0)
 Done. Zero warnings. Zero errors.
->>> clformat("Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.", 1, 0)
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 1, 0)
 Done. One warning. Zero errors.
->>> clformat("Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.", 1, 33)
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 1, 33)
 Done. One warning. Thirty-three errors.
->>> clformat("Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.", 33)
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 33)
 Done. Thirty-three warnings.
     """ 

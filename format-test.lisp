@@ -29,7 +29,7 @@ found by evaluating the format expression in lisp."
   (format-test "This is ~a ~%" "something")
   (format-test "String ~s in a string~%" "Simon")
   (format-test "String ~a in a string~%" "Simon")
-  (format-test "~{~&~VD~}" '(5 37 10 253 15 9847 10 559 5 12))
+  (format-test "~{~&~vd~}" '(5 37 10 253 15 9847 10 559 5 12))
   (format-test "This is ~10@a with lots of space ~%" 10)
   (format-test "This is ~10a with lots of space ~%" 10)
   (format-test "This is ~10,3a with lots of space ~%" 10)
@@ -71,7 +71,7 @@ found by evaluating the format expression in lisp."
   (format-test *list-etc* 1 2 3 4)
 
   (defparameter *compiler-format-string*
-    "Done.~^ ~@(~R~) warning~:p.~^ ~@(~R~) error~:p.")
+    "Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.")
 
   (format-test *compiler-format-string* 0 0)
   (format-test *compiler-format-string* 1 0)
