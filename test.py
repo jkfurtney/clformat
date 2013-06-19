@@ -11,9 +11,8 @@ ddd33
 ____+34*43
 >>> clformat("Just print a ~~ please.", )
 Just print a ~ please.
->>> clformat("This is ~a ~%", "something")
+>>> clformat("This is ~a ", "something")
 This is something 
-
 >>> clformat("String ~s in a string~%", "Simon")
 String "Simon" in a string
 
@@ -26,18 +25,14 @@ String Simon in a string
            9847
        559
    12
->>> clformat("This is ~10@a with lots of space ~%", 10)
+>>> clformat("This is ~10@a with lots of space ", 10)
 This is         10 with lots of space 
-
->>> clformat("This is ~10a with lots of space ~%", 10)
+>>> clformat("This is ~10a with lots of space ", 10)
 This is 10         with lots of space 
-
->>> clformat("This is ~10,3a with lots of space ~%", 10)
+>>> clformat("This is ~10,3a with lots of space ", 10)
 This is 10          with lots of space 
-
->>> clformat("This word ~,,4,'!a is big~%", "james")
+>>> clformat("This word ~,,4,'!a is big", "james")
 This word james!!!! is big
-
 >>> clformat("This word ~@,,4,'!a is big~%", "james")
 This word !!!!james is big
 
@@ -46,6 +41,9 @@ This word !!!!james is big
 
 >>> clformat("~a in binary is ~b~%", 42, 42)
 42 in binary is 101010
+
+>>> clformat("~a in octal is ~o~%", 42, 42)
+42 in octal is 52
 
 >>> clformat("floats ~f ~%", 22.7)
 floats 22.7 

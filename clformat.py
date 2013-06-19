@@ -159,7 +159,8 @@ class CompiledCLFormatControlString(object):
         return "CLFormat Compiles Control String: %s" % self.control_string
 
     def __call__(self, args):
-        directive_functions = {'a':a, 'x':x, 'd':d}
+        directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
+                               's':s, '%':percent, "o":o}
         args = ArgumentList(args)
         output=[]
         def process_node(node, output):
@@ -169,7 +170,10 @@ class CompiledCLFormatControlString(object):
                 if node.value:       # process directive
                     directive = node.value[0]
                     if directive in directive_functions:
-                        output.append(directive_functions[directive](args))
+                        func = directive_functions[directive]
+                        _, prefix_args, colon_modifier,at_modifier = node.value
+                        output.append(func(prefix_args, colon_modifier,
+                                           at_modifier, args))
                     else:
                         output.append(directive)
                 for child_node in node.children:
@@ -204,24 +208,44 @@ class ArgumentList(object):
 
 # directive functions
 
-def d(args):
+def d(prefix_args, colon_modifier, at_modifier, args):
     """
     process directive d
     """
     return "%i" % args.popleft()
 
-def a(args):
+def a(prefix_args, colon_modifier, at_modifier, args):
     """
     """
     return str(args.popleft())
 
-def x(args):
+def s(prefix_args, colon_modifier, at_modifier, args):
+    """
+    """
+    arg=args.popleft()
+    if type(arg)==str:
+        return '"%s"' % arg
+    else:
+        return str(arg)
+
+def x(prefix_args, colon_modifier, at_modifier, args):
     """
     """
     return "%x" % args.popleft()
 
-# ints dxobr
+def b(prefix_args, colon_modifier, at_modifier, args):
+    """
+    """
+    return bin(args.popleft())[2:]
 
+def o(prefix_args, colon_modifier, at_modifier, args):
+    return "%o" % args.popleft()
+
+def tilda(prefix_args, colon_modifier, at_modifier, args):
+    return "~"
+
+def percent(prefix_args, colon_modifier, at_modifier, args):
+    return ""
 
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
