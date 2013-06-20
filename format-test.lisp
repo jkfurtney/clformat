@@ -10,15 +10,26 @@ tests. The tests are defined by the format test-macro"
        ,@body
        (princ "    \"\"\" "))))
 
-(defmacro format-test (fmt-string &body fmt-args)
+(defun python-form (arg)
+  "Given a lisp object of any type try to convert it into a form suitable for parsing by python. Does not process nested lists"
+  (cond
+    ((symbolp arg)
+     (if arg               ; convert symbols to Strings
+	 (format nil "~s" (symbol-name arg))
+	 (format nil "[]")))
+    ((listp arg) (format nil "[~{~s~^, ~}]" arg))
+    (t (format nil "~s" arg))))
+
+(defun format-test (fmt-string &rest fmt-args)
   "Wraps calls to format to create python tests. Each call to
-format-test creates an individual Python test. The expected result is
-found by evaluating the format expression in lisp."
-  `(let ((result (format nil ,fmt-string ,@fmt-args)))
-     (fresh-line)
-     (format t ">>> clformat(~s, ~{~s~^, ~})~%" ,fmt-string '(,@fmt-args))
-     (princ result)
-     (terpri)))
+format-test creates an individual Python test in doctest format. The
+expected result is found by evaluating the format expression in lisp."
+  (let ((result (format nil "~?" fmt-string fmt-args))
+	(py-args (map 'list #'python-form fmt-args)))
+    (fresh-line)
+    (format t ">>> clformat(~s, ~{~a~^, ~})~%" fmt-string py-args)
+    (princ result)
+    (terpri)))
 
 (with-testfile-output
   (format-test "foo")
@@ -29,6 +40,7 @@ found by evaluating the format expression in lisp."
   (format-test "This is ~a " "something")
   (format-test "String ~s in a string~%" "Simon")
   (format-test "String ~a in a string~%" "Simon")
+  (format-test "String ~a in a string~%" 'simon)
   (format-test "~{~&~vd~}" '(5 37 10 253 15 9847 10 559 5 12))
   (format-test "This is ~10@a with lots of space " 10)
   (format-test "This is ~10a with lots of space " 10)
@@ -67,6 +79,7 @@ found by evaluating the format expression in lisp."
 
   (defparameter *list-etc*
     "~#[NONE~;~a~;~a and ~a~:;~a, ~a~]~#[~; and ~a~:;, ~a, etc~].")
+  (format-test *list-etc*)
   (format-test *list-etc* 1)
   (format-test *list-etc* 1 2)
   (format-test *list-etc* 1 2 3)
@@ -75,10 +88,12 @@ found by evaluating the format expression in lisp."
   (defparameter *compiler-format-string*
     "Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.")
 
+  (format-test *compiler-format-string*)
+  (format-test *compiler-format-string* 33)
   (format-test *compiler-format-string* 0 0)
   (format-test *compiler-format-string* 1 0)
-  (format-test *compiler-format-string* 1 33)
-  (format-test *compiler-format-string* 33))
+  (format-test *compiler-format-string* 0 1)
+  (format-test *compiler-format-string* 1 33))
 
 ; tests from hyperspec
 ; http://www.lispworks.com/documentation/HyperSpec/Body/22_ck.htm

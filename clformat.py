@@ -2,6 +2,7 @@ from pprint import pprint
 from collections import deque
 import test
 import re
+import int2num
 
 def parse_prefix_arg(a):
     """look for a single prefix argument. This can be v, #, a positive or
@@ -133,7 +134,6 @@ def build_tree(token_list):
     build_tree(top,tl)
     return top
 
-
 class CompiledCLFormatControlString(object):
     def __init__(self, tree, control_string):
         self.tree = tree
@@ -160,7 +160,8 @@ class CompiledCLFormatControlString(object):
 
     def __call__(self, args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
-                               's':s, '%':percent, "o":o}
+                               's':s, '%':percent, "o":o, 'r':r, "p":p,
+                               "^":circumflex}
         args = ArgumentList(args)
         output=[]
         def process_node(node, output):
@@ -172,9 +173,11 @@ class CompiledCLFormatControlString(object):
                     if directive in directive_functions:
                         func = directive_functions[directive]
                         _, prefix_args, colon_modifier,at_modifier = node.value
-                        output.append(func(prefix_args, colon_modifier,
-                                           at_modifier, args))
+                        ret = func(prefix_args, colon_modifier,
+                                   at_modifier, args)
+                        output.append(ret)
                     else:
+                        # un implimented directive
                         output.append(directive)
                 for child_node in node.children:
                     process_node(child_node, output)
@@ -227,6 +230,22 @@ def s(prefix_args, colon_modifier, at_modifier, args):
         return '"%s"' % arg
     else:
         return str(arg)
+def circumflex(prefix_args, colon_modifier, at_modifier, args):
+    return "^"
+
+def p(prefix_args, colon_modifier, at_modifier, args):
+    if colon_modifier:   value = args.used_data[-1]
+    else:                value = args.popleft()
+
+    if at_modifier:
+        single_suffix = "y"
+        plural_suffix = "ies"
+    else:
+        single_suffix = ""
+        plural_suffix = "s"
+
+    if args.used_data[-1]==1: return single_suffix
+    else:                     return plural_suffix
 
 def x(prefix_args, colon_modifier, at_modifier, args):
     """
@@ -246,6 +265,9 @@ def tilda(prefix_args, colon_modifier, at_modifier, args):
 
 def percent(prefix_args, colon_modifier, at_modifier, args):
     return ""
+
+def r(prefix_args, colon_modifier, at_modifier, args):
+    return int2num.spoken_number(args.popleft())
 
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
