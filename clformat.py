@@ -266,7 +266,9 @@ def o(prefix_args, colon_modifier, at_modifier, args):
     return "%o" % args.popleft()
 
 def tilda(prefix_args, colon_modifier, at_modifier, args):
-    return "~"
+    if prefix_args[0] is None:        n=1
+    else:                             n=prefix_args[0]
+    return "~"*n
 
 def percent(prefix_args, colon_modifier, at_modifier, args):
     return ""
