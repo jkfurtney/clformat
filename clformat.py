@@ -1,6 +1,5 @@
 from pprint import pprint
 from collections import deque
-import test
 import re
 import int2num
 
@@ -46,7 +45,7 @@ def parse_directive_modifiers(a):
     return colon_modifier, at_modifier
 
 def parse_directive_type(a):
-    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];^":
+    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];^*":
         return a.popleft()
     raise Exception("unknown directive type %s", a[0])
 
@@ -161,7 +160,7 @@ class CompiledCLFormatControlString(object):
     def __call__(self, args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                                's':s, '%':percent, "o":o, 'r':r, "p":p,
-                               "^":circumflex, "(":parenthesis}
+                               "^":circumflex, "(":parenthesis, "*":asterisk}
         args = ArgumentList(args)
         output=[]
         def process_node(node, output):
@@ -170,6 +169,7 @@ class CompiledCLFormatControlString(object):
             else:
                 if node.value:       # process directive
                     directive = node.value[0]
+                    if directive.isalnum(): directive=directive.lower()
                     if directive in directive_functions:
                         func = directive_functions[directive]
                         _, prefix_args, colon_modifier,at_modifier = node.value
@@ -276,6 +276,15 @@ def percent(prefix_args, colon_modifier, at_modifier, args):
 def r(prefix_args, colon_modifier, at_modifier, args):
     return int2num.spoken_number(args.popleft())
 
+def asterisk(prefix_args, colon_modifier, at_modifier, args):
+    if prefix_args[0] is None:        n=1
+    else:                             n=prefix_args[0]
+    if colon_modifier: args.rewind(n)
+    elif at_modifier:
+        raise NotImplemented("Go to argument n")
+    else:
+        for i in range(n): args.popleft()
+
 def parenthesis(prefix_args, colon_modifier, at_modifier, args):
     return ""
 
@@ -309,6 +318,9 @@ if __name__ == '__main__':
     # clformat("~{~a~#[~;, and ~:;, ~]~}",  [1,2,3])
     #clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 
-
     import doctest
+    import test
+    import hyperspec_tests
+
     doctest.testmod(test)
+    #doctest.testmod(hyperspec_tests)

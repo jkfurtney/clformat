@@ -96,12 +96,20 @@ NONE.
 1, 2 and 3.
 >>> clformat("~#[NONE~;~a~;~a and ~a~:;~a, ~a~]~#[~; and ~a~:;, ~a, etc~].", 1, 2, 3, 4)
 1, 2, 3, etc.
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", )
+Done.
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 33)
+Done. Thirty-three warnings.
 >>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 0, 0)
 Done. Zero warnings. Zero errors.
 >>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 1, 0)
 Done. One warning. Zero errors.
+>>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 0, 1)
+Done. Zero warnings. One error.
 >>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 1, 33)
 Done. One warning. Thirty-three errors.
->>> clformat("Done.~^ ~@(~r~) warning~:p.~^ ~@(~r~) error~:p.", 33)
-Done. Thirty-three warnings.
+>>> clformat("~@R ~(~@R~)", 14, 14)
+XIV xiv
+>>> clformat("~@(how is ~:(BOB SMITH~)?~)", )
+How is bob smith?
     """ 
