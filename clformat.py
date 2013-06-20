@@ -161,7 +161,7 @@ class CompiledCLFormatControlString(object):
     def __call__(self, args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                                's':s, '%':percent, "o":o, 'r':r, "p":p,
-                               "^":circumflex}
+                               "^":circumflex, "(":parenthesis}
         args = ArgumentList(args)
         output=[]
         def process_node(node, output):
@@ -175,16 +175,18 @@ class CompiledCLFormatControlString(object):
                         _, prefix_args, colon_modifier,at_modifier = node.value
                         ret = func(prefix_args, colon_modifier,
                                    at_modifier, args)
+                        if ret is None: return None
                         output.append(ret)
                     else:
                         # un implimented directive
                         output.append(directive)
                 for child_node in node.children:
-                    process_node(child_node, output)
+                    ret = process_node(child_node, output)
+                    if ret is None: break
+            return 1
 
         process_node(self.tree, output)
         return output
-
 
 class ArgumentList(object):
     """ Store and manipulate the argument list to clformat.
@@ -231,7 +233,10 @@ def s(prefix_args, colon_modifier, at_modifier, args):
     else:
         return str(arg)
 def circumflex(prefix_args, colon_modifier, at_modifier, args):
-    return "^"
+    if args.empty():
+        return None
+    else:
+        return ""
 
 def p(prefix_args, colon_modifier, at_modifier, args):
     if colon_modifier:   value = args.used_data[-1]
@@ -268,6 +273,9 @@ def percent(prefix_args, colon_modifier, at_modifier, args):
 
 def r(prefix_args, colon_modifier, at_modifier, args):
     return int2num.spoken_number(args.popleft())
+
+def parenthesis(prefix_args, colon_modifier, at_modifier, args):
+    return ""
 
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
