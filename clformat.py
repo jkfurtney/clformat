@@ -191,7 +191,7 @@ class CompiledCLFormatControlString(object):
     def __call__(self, in_args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                                's':s, '%':percent, "o":o, 'r':r, "p":p,
-                               "^":circumflex, "(":parenthesis, "*":asterisk}
+                               "^":circumflex, "*":asterisk}
         self.args = ArgumentList(in_args)
         output=[]
 
@@ -265,7 +265,7 @@ class CompiledCLFormatControlString(object):
             """
             directive, prefix_args, colon_modifier, at_modifier = node.value
             assert directive == "{"
-            pre_process_prefix_args(prefix_args)
+            local_prefix_args = pre_process_prefix_args(prefix_args)
             if prefix_args[0] is None:
                 max_iteration = 1e8
             else:
@@ -294,6 +294,14 @@ class CompiledCLFormatControlString(object):
             else:
                 self.args=old_args
 
+        def process_capitalization(node, output):
+            """
+            (
+            """
+            directive, prefix_args, colon_modifier, at_modifier = node.value
+            assert directive=="("
+            pass
+
 
         def process_node(node, output):
             if type(node.value)==str:
@@ -304,19 +312,21 @@ class CompiledCLFormatControlString(object):
                     if directive in directive_functions:
                         func = directive_functions[directive]
                         _, prefix_args, colon_modifier,at_modifier = node.value
-                        pre_process_prefix_args(prefix_args)
+                        local_prefix_args = pre_process_prefix_args(prefix_args)
                         ret = func(prefix_args, colon_modifier,
                                    at_modifier, self.args)
                         if ret is None: return None
                         output.append(ret)
                     elif directive=='[':
-                        ret = process_conditional(node,output)
-                        if ret is None:
-                            return None
+                        ret = process_conditional(node, output)
+                        if ret is None: return None
                         return 1
                     elif directive=='{':
                         process_list(node, output)
                         return 1
+                    elif directive=='(':
+                        ret = process_capitalization(node, output)
+                        if ret is None: return None
                     else:
                         # un implimented directive
                         output.append(directive)
@@ -403,9 +413,6 @@ def asterisk(prefix_args, colon_modifier, at_modifier, args):
     else:
         for i in range(n): args.popleft()
 
-def parenthesis(prefix_args, colon_modifier, at_modifier, args):
-    return ""
-
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
     #pprint(token_list)
@@ -442,5 +449,5 @@ if __name__ == '__main__':
     import pytests
 
     doctest.testmod(test)
-    doctest.testmod(hyperspec_tests)
+    #doctest.testmod(hyperspec_tests)
     doctest.testmod(pytests)
