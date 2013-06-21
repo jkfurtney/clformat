@@ -179,7 +179,7 @@ expected result is found by evaluating the format expression in lisp."
 
  (format-test "Written to ~A." #P"foo.bin")
 
- (setq foo "Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].")
+ (setq foo "Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].")
  (format-test foo)
  (format-test foo 'foo)
  (format-test foo 'foo 'bar)

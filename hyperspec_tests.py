@@ -79,14 +79,14 @@ foobar
   foobar  
 >>> clformat("Written to ~A.", #P"foo.bin")
 Written to foo.bin.
->>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", )
+>>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", )
 Items: none.
->>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO")
+>>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", "FOO")
 Items: FOO.
->>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR")
+>>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", "FOO", "BAR")
 Items: FOO and BAR.
->>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR", "BAZ")
+>>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", "FOO", "BAR", "BAZ")
 Items: FOO , BAR , and BAZ.
->>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR", "BAZ", "QUUX")
+>>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", "FOO", "BAR", "BAZ", "QUUX")
 Items: FOO , BAR , BAZ , and QUUX.
     """ 

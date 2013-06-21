@@ -201,7 +201,7 @@ class CompiledCLFormatControlString(object):
             """
             for i in range(len(prefix_args)):
                 if prefix_args[i]=='#':
-                    prefix_args[i] = len(args)
+                    prefix_args[i] = len(args)  # args here is in __call's scope
                 elif prefix_args[i]=='v':
                     varg = args.popleft()
                     assert type(varg)==int or type(varg)==str
@@ -252,6 +252,25 @@ class CompiledCLFormatControlString(object):
                         current+=1
             return 1
 
+        def process_list(node, output):
+            """Looping directive {. No : or @ functionality. also fix is to
+            support ~:} which will process the body atleast once
+
+            """
+            directive, prefix_args, colon_modifier, at_modifier = node.value
+            assert directive == "{"
+            pre_process_prefix_args(prefix_args)
+            if prefix_args[0] is None:
+                max_iteration = 1e8
+            else:
+                max_iteration = prefix_args[0]
+                assert type(max_iteration) == int
+
+            # make sure arg is a list
+            # while there are args
+            ## process the list of child arguments
+            ## check for returning None which is the break
+
 
         def process_node(node, output):
             if type(node.value)==str:
@@ -271,6 +290,9 @@ class CompiledCLFormatControlString(object):
                         ret = process_conditional(node,output)
                         if ret is None:
                             return None
+                        return 1
+                    elif directive=='{':
+                        process_list(node, output)
                         return 1
                     else:
                         # un implimented directive
