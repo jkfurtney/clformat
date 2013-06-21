@@ -186,26 +186,32 @@ class CompiledCLFormatControlString(object):
 
         print_node(self.tree, 0)
     def __repr__(self):
-        return "CLFormat Compiles Control String: %s" % self.control_string
+        return "CLFormat Compiled Control String: %s" % self.control_string
 
-    def __call__(self, args):
+    def __call__(self, in_args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                                's':s, '%':percent, "o":o, 'r':r, "p":p,
                                "^":circumflex, "(":parenthesis, "*":asterisk}
-        args = ArgumentList(args)
+        self.args = ArgumentList(in_args)
         output=[]
 
         def pre_process_prefix_args(prefix_args):
             """look for # or v as prefix args and replace them with the
-            number of remaining args or pop an arg off.
+            number of remaining args or pop an arg off. Returns a new
+            prefix list.
+
             """
+            local_prefix_args = [None,None,None,None]
             for i in range(len(prefix_args)):
                 if prefix_args[i]=='#':
-                    prefix_args[i] = len(args)  # args here is in __call's scope
+                    local_prefix_args[i] = len(self.args)
                 elif prefix_args[i]=='v':
-                    varg = args.popleft()
+                    varg = self.args.popleft()
                     assert type(varg)==int or type(varg)==str
-                    prefix_args[i] = varg
+                    local_prefix_args[i] = varg
+                else:
+                    local_prefix_args[i]=prefix_args[i]
+            return local_prefix_args
 
         def process_conditional(node, output):
             """
@@ -214,14 +220,13 @@ class CompiledCLFormatControlString(object):
             """
             directive, prefix_args, colon_modifier, at_modifier = node.value
             assert directive == "["
-            pre_process_prefix_args(prefix_args)
-            if prefix_args[0] is None:
-                index = args.popleft()
+            local_prefix_args = pre_process_prefix_args(prefix_args)
+            if local_prefix_args[0] is None:
+                index = self.args.popleft()
                 assert type(index)==int
             else:
-                index= prefix_args[0]
+                index = local_prefix_args[0]
                 assert type(index)==int
-
             current=0
             child_deque = deque(node.children[:])   #  a copy
             while child_deque:
@@ -239,9 +244,7 @@ class CompiledCLFormatControlString(object):
                             ret = process_node(cnode,output)
                             if ret is None: return None
                     return 1
-                # looking for correct
-                if len(child_deque)==0:
-                    raise Exception("No clause found mactching arg to ~[")
+                # looking for correct clause
                 cnode = child_deque.popleft()
                 if type(cnode.value)==str:
                     pass
@@ -253,8 +256,11 @@ class CompiledCLFormatControlString(object):
             return 1
 
         def process_list(node, output):
-            """Looping directive {. No : or @ functionality. also fix is to
-            support ~:} which will process the body atleast once
+            """Looping directive {. No : functionality. also fix to support ~:}
+            which will process the body atleast once
+
+            : argument should be a list of lists. Each pass over the
+            children nodes should use one of the sublists as arg
 
             """
             directive, prefix_args, colon_modifier, at_modifier = node.value
@@ -266,10 +272,27 @@ class CompiledCLFormatControlString(object):
                 max_iteration = prefix_args[0]
                 assert type(max_iteration) == int
 
-            # make sure arg is a list
-            # while there are args
-            ## process the list of child arguments
-            ## check for returning None which is the break
+            if at_modifier:
+                pass
+            else:
+                old_args = self.args
+                self.args = deque(old_args.popleft())
+
+            iteration = 0
+            while self.args:
+                if iteration >= max_iteration:
+                    break
+                for child_node in node.children:
+                    ret = process_node(child_node, output)
+                    if ret is None:
+                        iteration=max_iteration
+                        break
+                iteration += 1
+
+            if at_modifier:
+                pass
+            else:
+                self.args=old_args
 
 
         def process_node(node, output):
@@ -283,7 +306,7 @@ class CompiledCLFormatControlString(object):
                         _, prefix_args, colon_modifier,at_modifier = node.value
                         pre_process_prefix_args(prefix_args)
                         ret = func(prefix_args, colon_modifier,
-                                   at_modifier, args)
+                                   at_modifier, self.args)
                         if ret is None: return None
                         output.append(ret)
                     elif directive=='[':
@@ -326,8 +349,9 @@ def s(prefix_args, colon_modifier, at_modifier, args):
         return '"%s"' % arg
     else:
         return str(arg)
+
 def circumflex(prefix_args, colon_modifier, at_modifier, args):
-    if args.empty():
+    if len(args)==0:
         return None
     else:
         return ""
