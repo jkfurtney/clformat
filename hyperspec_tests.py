@@ -1,25 +1,25 @@
 from clformat import clformat
 def test():
-    """
+    """ 
 >>> clformat("foo", )
 foo
->>> clformat("The answer is ~d.", 5)
+>>> clformat("The answer is ~D.", 5)
 The answer is 5.
->>> clformat("The answer is ~3d.", 5)
+>>> clformat("The answer is ~3D.", 5)
 The answer is   5.
->>> clformat("The answer is ~3,'0d.", 5)
+>>> clformat("The answer is ~3,'0D.", 5)
 The answer is 005.
->>> clformat("The answer is ~:d.", 229345007)
+>>> clformat("The answer is ~:D.", 229345007)
 The answer is 229,345,007.
->>> clformat("Look at the ~a!", "elephant")
+>>> clformat("Look at the ~A!", "elephant")
 Look at the elephant!
->>> clformat("~d item~:p found.", 3)
+>>> clformat("~D item~:P found.", 3)
 3 items found.
->>> clformat("~r dog~:[s are~; is~] here.", 3, [])
+>>> clformat("~R dog~:[s are~; is~] here.", 3, [])
 three dogs are here.
->>> clformat("~r dog~:*~[s are~; is~:;s are~] here.", 3)
+>>> clformat("~R dog~:*~[s are~; is~:;s are~] here.", 3)
 three dogs are here.
->>> clformat("Here ~[are~;is~:;are~] ~:*~r pupp~:@p.", 3)
+>>> clformat("Here ~[are~;is~:;are~] ~:*~R pupp~:@P.", 3)
 Here are three puppies.
 >>> clformat("~6,2F|~6,2,1,'*F|~6,2,,'?F|~6F|~,2F|~F", 3.14159, 3.14159, 3.14159, 3.14159, 3.14159, 3.14159)
   3.14| 31.42|  3.14|3.14159|3.14|3.14159
@@ -72,11 +72,21 @@ foo    bar
 >>> clformat("~10:<foobar~>", )
     foobar
 >>> clformat("~10:@<foo~;bar~>", )
- foo bar
+ foo bar  
 >>> clformat("~10@<foobar~>", )
-foobar
+foobar    
 >>> clformat("~10:@<foobar~>", )
-  foobar
+  foobar  
 >>> clformat("Written to ~A.", #P"foo.bin")
 Written to foo.bin.
-    """
+>>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", )
+Items: none.
+>>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO")
+Items: FOO.
+>>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR")
+Items: FOO and BAR.
+>>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR", "BAZ")
+Items: FOO , BAR , and BAZ.
+>>> clformat("Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].", "FOO", "BAR", "BAZ", "QUUX")
+Items: FOO , BAR , BAZ , and QUUX.
+    """ 

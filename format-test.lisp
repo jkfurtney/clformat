@@ -10,6 +10,7 @@ tests. The tests are defined by the format test-macro"
        ,@body
        (princ "    \"\"\" "))))
 
+; fix this to handle path to string and floats properly
 (defun python-form (arg)
   "Given a lisp object of any type try to convert it into a form suitable for parsing by python. Does not process nested lists"
   (cond
@@ -176,4 +177,11 @@ expected result is found by evaluating the format expression in lisp."
  (format-test "~10@<foobar~>")
  (format-test "~10:@<foobar~>")
 
- (format-test "Written to ~A." #P"foo.bin"))
+ (format-test "Written to ~A." #P"foo.bin")
+
+ (setq foo "Items:~#[ none~; ~S~; ~S and ~S~:;~@{~#[~; and~] ~S~^ ,~}~].")
+ (format-test foo)
+ (format-test foo 'foo)
+ (format-test foo 'foo 'bar)
+ (format-test foo 'foo 'bar 'baz)
+ (format-test foo 'foo 'bar 'baz 'quux))

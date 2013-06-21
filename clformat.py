@@ -45,6 +45,8 @@ def parse_directive_modifiers(a):
     return colon_modifier, at_modifier
 
 def parse_directive_type(a):
+    if a[0].isalnum():
+        a[0]=a[0].lower()
     if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];^*":
         return a.popleft()
     raise Exception("unknown directive type %s", a[0])
@@ -133,6 +135,35 @@ def build_tree(token_list):
     build_tree(top,tl)
     return top
 
+class ArgumentList(object):
+    """ Store and manipulate the argument list to clformat.
+    """
+    def __init__(self,args):
+        self.data=deque(args)
+        self.used_data = deque()
+    def __len__(self):
+        return len(self.data)
+    def popleft(self):
+        item = self.data.popleft()
+        self.used_data.append(item)
+        return item
+    def empty(self):
+        if len(self.data)==0: return True
+        else: return False
+    def rewind(self,n):
+        assert type(n)==int and n>=0
+        if len(self.used_data)<n:
+            raise Exception("Can't rewind argument list, not enought arguments")
+        for i in range(n):
+            self.data.appendleft(self.used_data.pop())
+    def goto(self,n):
+        assert type(n)==int and n>=0
+        self.rewind(len(self.used_data))
+        if n==0: return
+        for i in range(n-1):
+            self.popleft()
+
+
 class CompiledCLFormatControlString(object):
     def __init__(self, tree, control_string):
         self.tree = tree
@@ -163,20 +194,84 @@ class CompiledCLFormatControlString(object):
                                "^":circumflex, "(":parenthesis, "*":asterisk}
         args = ArgumentList(args)
         output=[]
+
+        def pre_process_prefix_args(prefix_args):
+            """look for # or v as prefix args and replace them with the
+            number of remaining args or pop an arg off.
+            """
+            for i in range(len(prefix_args)):
+                if prefix_args[i]=='#':
+                    prefix_args[i] = len(args)
+                elif prefix_args[i]=='v':
+                    varg = args.popleft()
+                    assert type(varg)==int or type(varg)==str
+                    prefix_args[i] = varg
+
+        def process_conditional(node, output):
+            """
+            Conditional directive ~[
+            missing : and @ functionality
+            """
+            directive, prefix_args, colon_modifier, at_modifier = node.value
+            assert directive == "["
+            pre_process_prefix_args(prefix_args)
+            if prefix_args[0] is None:
+                index = args.popleft()
+                assert type(index)==int
+            else:
+                index= prefix_args[0]
+                assert type(index)==int
+
+            current=0
+            child_deque = deque(node.children[:])   #  a copy
+            while child_deque:
+                if current == index:  #  we found what we are looking for
+                    # process nodes until the next ~; or empty
+                    while True:
+                        if len(child_deque)==0:
+                            return 1 # should never get here
+                        cnode = child_deque.popleft()
+                        if type(cnode.value)==str:
+                            process_node(cnode, output)
+                        elif cnode.value[0]==";":
+                            break
+                        else:
+                            ret = process_node(cnode,output)
+                            if ret is None: return None
+                    return 1
+                # looking for correct
+                if len(child_deque)==0:
+                    raise Exception("No clause found mactching arg to ~[")
+                cnode = child_deque.popleft()
+                if type(cnode.value)==str:
+                    pass
+                elif cnode.value[0]==";":
+                    if cnode.value[2]:
+                        current = index
+                    else:
+                        current+=1
+            return 1
+
+
         def process_node(node, output):
             if type(node.value)==str:
                 output.append(node.value)
             else:
                 if node.value:       # process directive
                     directive = node.value[0]
-                    if directive.isalnum(): directive=directive.lower()
                     if directive in directive_functions:
                         func = directive_functions[directive]
                         _, prefix_args, colon_modifier,at_modifier = node.value
+                        pre_process_prefix_args(prefix_args)
                         ret = func(prefix_args, colon_modifier,
                                    at_modifier, args)
                         if ret is None: return None
                         output.append(ret)
+                    elif directive=='[':
+                        ret = process_conditional(node,output)
+                        if ret is None:
+                            return None
+                        return 1
                     else:
                         # un implimented directive
                         output.append(directive)
@@ -187,29 +282,6 @@ class CompiledCLFormatControlString(object):
 
         process_node(self.tree, output)
         return output
-
-class ArgumentList(object):
-    """ Store and manipulate the argument list to clformat.
-    """
-    def __init__(self,args):
-        self.data=deque(args)
-        self.used_data = deque()
-    def __len__(self):
-        return len(self.data)
-    def popleft(self):
-        item = self.data.popleft()
-        self.used_data.append(item)
-        return item
-    def empty(self):
-        if len(self.data)==0: return True
-        else: return False
-    def rewind(self,n):
-        assert type(n)==int and n>=0
-        if len(self.used_data)<n:
-            raise Exception("Can't rewind argument list, not enought arguments")
-        for i in range(n):
-            self.data.appendleft(self.used_data.pop())
-
 
 # directive functions
 
@@ -281,7 +353,7 @@ def asterisk(prefix_args, colon_modifier, at_modifier, args):
     else:                             n=prefix_args[0]
     if colon_modifier: args.rewind(n)
     elif at_modifier:
-        raise NotImplemented("Go to argument n")
+        args.goto(n)
     else:
         for i in range(n): args.popleft()
 
@@ -313,7 +385,7 @@ if __name__ == '__main__':
     clformat("This is a hex number ~5x", 10)
     clformat("~,,'.,4d", 36456096)
     clformat("this is just a string")
-    clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 3)
+    clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 2)
 
     # clformat("~{~a~#[~;, and ~:;, ~]~}",  [1,2,3])
     #clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
@@ -321,6 +393,8 @@ if __name__ == '__main__':
     import doctest
     import test
     import hyperspec_tests
+    import pytests
 
     doctest.testmod(test)
-    #doctest.testmod(hyperspec_tests)
+    doctest.testmod(hyperspec_tests)
+    doctest.testmod(pytests)
