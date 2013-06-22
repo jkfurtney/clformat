@@ -2,6 +2,9 @@ from pprint import pprint
 from collections import deque
 import re
 import int2num
+import roman
+
+# funny pep: http://www.python.org/dev/peps/pep-0313/
 
 def parse_prefix_arg(a):
     """look for a single prefix argument. This can be v, #, a positive or
@@ -301,7 +304,12 @@ class CompiledCLFormatControlString(object):
             directive, prefix_args, colon_modifier, at_modifier = node.value
             assert directive=="("
             pass
+            # if there is a nested capitalization directive, remove it
+            # and add its child nodes to this directives child nodes
+            start_size = len(output)
 
+
+            # post process capitalization by altering the output list.
 
         def process_node(node, output):
             if type(node.value)==str:
@@ -402,7 +410,11 @@ def percent(prefix_args, colon_modifier, at_modifier, args):
     return ""
 
 def r(prefix_args, colon_modifier, at_modifier, args):
-    return int2num.spoken_number(args.popleft())
+    i = args.popleft()
+    if not type(i) is int:
+        raise ValueError("Argument to directive r must be an integer")
+    if at_modifier: return roman.int_to_roman(i)
+    return int2num.spoken_number(i)
 
 def asterisk(prefix_args, colon_modifier, at_modifier, args):
     if prefix_args[0] is None:        n=1
