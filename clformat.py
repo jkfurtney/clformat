@@ -197,7 +197,7 @@ class CompiledCLFormatControlString(object):
                                "^":circumflex, "*":asterisk}
         self.args = ArgumentList(in_args)
         output=[]
-
+        self.capitalization = False
         def pre_process_prefix_args(prefix_args):
             """look for # or v as prefix args and replace them with the
             number of remaining args or pop an arg off. Returns a new
@@ -297,17 +297,56 @@ class CompiledCLFormatControlString(object):
             else:
                 self.args=old_args
 
+
         def process_capitalization(node, output):
             """
             (
             """
             directive, prefix_args, colon_modifier, at_modifier = node.value
             assert directive=="("
-            pass
-            # if there is a nested capitalization directive, remove it
-            # and add its child nodes to this directives child nodes
-            start_size = len(output)
+            local_prefix_args = pre_process_prefix_args(prefix_args)
 
+            self.capitalization=True
+            start_size = len(output)
+            ret = 1
+            for child in node.children:
+                ret = process_node(child, output)
+                if ret is None: break
+            self.capitalization=False
+
+            # now retroactively do the capitalization
+            case = 0
+            if colon_modifier: case += 1
+            if at_modifier:    case += 2
+
+            if case == 0:                  # lower case all words
+                for i in range(start_size,len(output)):
+                    output[i] = output[i].lower()
+            elif case == 1:                # capitalize first letter of each word
+                for i in range(start_size,len(output)):
+                    output[i] = output[i].title()
+            elif case == 2: # capitalize the first word and lower case the others.
+                for i in range(start_size,len(output)):
+                    if i == start_size:  #  find the first word
+                        split_pattern = re.compile("([\-\s]+|[^\-\s]+)")
+                        #split_pattern = re.compile("(\s+|\S+)")
+                        sub_list = split_pattern.findall(output[i])
+                        found = False
+                        for j in range(len(sub_list)):
+                            if not found:
+                                if re.match("\S+", sub_list[j]):
+                                    sub_list[j] = sub_list[j].title()
+                                    found = True
+                            else: sub_list[j] = sub_list[j].lower()
+                        output[i] = "".join(sub_list)
+                    else: output[i] = output[i].lower()
+
+            elif case == 3:                # Upper case all words
+                for i in range(start_size,len(output)):
+                    output[i] = output[i].upper()
+            else:
+                raise Exception("should not get here")
+            return ret
 
             # post process capitalization by altering the output list.
 
@@ -333,8 +372,12 @@ class CompiledCLFormatControlString(object):
                         process_list(node, output)
                         return 1
                     elif directive=='(':
-                        ret = process_capitalization(node, output)
-                        if ret is None: return None
+                        if self.capitalization:
+                            pass
+                        else:
+                            ret = process_capitalization(node, output)
+                            if ret is None: return None
+                            return 1
                     else:
                         # un implimented directive
                         output.append(directive)

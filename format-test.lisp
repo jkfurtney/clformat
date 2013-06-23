@@ -47,7 +47,7 @@ expected result is found by evaluating the format expression in lisp."
   (format-test "This is ~10a with lots of space " 10)
   (format-test "This is ~10,3a with lots of space " 10)
   (format-test "This word ~,,4,'!a is big" "james")
-  (format-test "This word ~@,,4,'!a is big~%" "james")
+  (format-test "This word ~,,4,'!@a is big~%" "james")
 
   (format-test "~a in hex is ~x~%" 256 256)
   (format-test "~a in binary is ~b~%" 42 42)

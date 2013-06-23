@@ -19,4 +19,8 @@ def test():
 
     >>> clformat("Items:~@{~#[~; and~] ~A~^,~}","a","b","c")
     Items: a, b, and c
+
+    >>> clformat("~@(how is ~:(BOB SMITH~)?~)", )
+    How is bob smith?
+
     """

@@ -36,7 +36,7 @@ This is 10         with lots of space
 This is 10          with lots of space 
 >>> clformat("This word ~,,4,'!a is big", "james")
 This word james!!!! is big
->>> clformat("This word ~@,,4,'!a is big~%", "james")
+>>> clformat("This word ~,,4,'!@a is big~%", "james")
 This word !!!!james is big
 
 >>> clformat("~a in hex is ~x~%", 256, 256)

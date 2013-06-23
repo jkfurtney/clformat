@@ -77,7 +77,7 @@ foo    bar
 foobar    
 >>> clformat("~10:@<foobar~>", )
   foobar  
->>> clformat("Written to ~A.", #P"foo.bin")
+>>> clformat("Written to ~A.", "foo.bin")
 Written to foo.bin.
 >>> clformat("Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].", )
 Items: none.
