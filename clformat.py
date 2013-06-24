@@ -2,7 +2,7 @@ from pprint import pprint
 from collections import deque
 import re
 import int2num
-import roman
+from utility import int_to_roman, base10toN
 
 # funny pep: http://www.python.org/dev/peps/pep-0313/
 
@@ -108,7 +108,6 @@ def build_tree(token_list):
             self.children.append(Node(self, child_value))
             return self.children[-1]
 
-
     def build_tree(parent, token_list):
         """This function is called recursively to transform the token list
         into a tree. The paired directives created a nested tree of
@@ -164,21 +163,26 @@ class ArgumentList(object):
     def __init__(self,args):
         self.data=deque(args)
         self.used_data = deque()
+
     def __len__(self):
         return len(self.data)
+
     def popleft(self):
         item = self.data.popleft()
         self.used_data.append(item)
         return item
+
     def empty(self):
         if len(self.data)==0: return True
         else: return False
+
     def rewind(self,n):
         assert type(n)==int and n>=0
         if len(self.used_data)<n:
             raise Exception("Can't rewind argument list, not enought arguments")
         for i in range(n):
             self.data.appendleft(self.used_data.pop())
+
     def goto(self,n):
         assert type(n)==int and n>=0
         self.rewind(len(self.used_data))
@@ -406,13 +410,7 @@ class CompiledCLFormatControlString(object):
         return output
 
 # directive functions
-
-def d(prefix_args, colon_modifier, at_modifier, args):
-    """
-    process directive d
-    """
-    return "%i" % args.popleft()
-
+# general directives: A and S
 def a(prefix_args, colon_modifier, at_modifier, args):
     """
     """
@@ -427,12 +425,41 @@ def s(prefix_args, colon_modifier, at_modifier, args):
     else:
         return str(arg)
 
-def circumflex(prefix_args, colon_modifier, at_modifier, args):
-    if len(args)==0:
-        return None
-    else:
-        return ""
+# integer directives: d x b o and r
+def d(prefix_args, colon_modifier, at_modifier, args):
+    return "%i" % args.popleft()
 
+def x(prefix_args, colon_modifier, at_modifier, args):
+    return "%x" % args.popleft()
+
+def b(prefix_args, colon_modifier, at_modifier, args):
+    return bin(args.popleft())[2:]
+
+def o(prefix_args, colon_modifier, at_modifier, args):
+    return "%o" % args.popleft()
+
+def r(prefix_args, colon_modifier, at_modifier, args):
+    i = args.popleft()
+    if not type(i) is int:
+        raise ValueError("Argument to directive r must be an integer")
+    if at_modifier: return roman.int_to_roman(i)
+    return int2num.spoken_number(i)
+
+# floating point directives: E F G $
+
+def e(prefix_args, colon_modifier, at_modifier, args):
+    pass
+
+def f(prefix_args, colon_modifier, at_modifier, args):
+    pass
+
+def g(prefix_args, colon_modifier, at_modifier, args):
+    pass
+
+def dollar(prefix_args, colon_modifier, at_modifier, args):
+    pass
+
+# special non-pair directives P ^ ~ % & *
 def p(prefix_args, colon_modifier, at_modifier, args):
     if colon_modifier:   value = args.used_data[-1]
     else:                value = args.popleft()
@@ -447,18 +474,11 @@ def p(prefix_args, colon_modifier, at_modifier, args):
     if args.used_data[-1]==1: return single_suffix
     else:                     return plural_suffix
 
-def x(prefix_args, colon_modifier, at_modifier, args):
-    """
-    """
-    return "%x" % args.popleft()
-
-def b(prefix_args, colon_modifier, at_modifier, args):
-    """
-    """
-    return bin(args.popleft())[2:]
-
-def o(prefix_args, colon_modifier, at_modifier, args):
-    return "%o" % args.popleft()
+def circumflex(prefix_args, colon_modifier, at_modifier, args):  # ^
+    if len(args)==0:
+        return None
+    else:
+        return ""
 
 def tilda(prefix_args, colon_modifier, at_modifier, args):
     if prefix_args[0] is None:        n=1
@@ -467,13 +487,6 @@ def tilda(prefix_args, colon_modifier, at_modifier, args):
 
 def percent(prefix_args, colon_modifier, at_modifier, args):
     return ""
-
-def r(prefix_args, colon_modifier, at_modifier, args):
-    i = args.popleft()
-    if not type(i) is int:
-        raise ValueError("Argument to directive r must be an integer")
-    if at_modifier: return roman.int_to_roman(i)
-    return int2num.spoken_number(i)
 
 def ampersand(prefix_args, colon_modifier, at_modifier, args):
     return "\n"
@@ -487,6 +500,13 @@ def asterisk(prefix_args, colon_modifier, at_modifier, args):
     else:
         for i in range(n): args.popleft()
 
+directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
+                       's':s, '%':percent, "o":o, 'r':r, "p":p,
+                       "^":circumflex, "*":asterisk, "&": ampersand}
+
+directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
+
+
 def clformat(control_string, *args):
     token_list = tokenize(control_string)
     #pprint(token_list)
@@ -499,11 +519,6 @@ def clformat(control_string, *args):
     print ret
     #return ret
 
-directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
-                       's':s, '%':percent, "o":o, 'r':r, "p":p,
-                       "^":circumflex, "*":asterisk, "&": ampersand}
-
-directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
 
 if __name__ == '__main__':
     assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4'], \
@@ -514,7 +529,6 @@ if __name__ == '__main__':
         ("x", ['v',"'^","#",'-302'], True,True)
     assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None], True, \
                                                 True)
-
 
     clformat("~3,-4:@x", 101)
     clformat("0x0~3,-4:@x", 10350)
