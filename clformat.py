@@ -194,7 +194,7 @@ class CompiledCLFormatControlString(object):
     def __call__(self, in_args):
         directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                                's':s, '%':percent, "o":o, 'r':r, "p":p,
-                               "^":circumflex, "*":asterisk}
+                               "^":circumflex, "*":asterisk, "&": ampersand}
         self.args = ArgumentList(in_args)
         output=[]
         self.capitalization = False
@@ -319,23 +319,22 @@ class CompiledCLFormatControlString(object):
             if colon_modifier: case += 1
             if at_modifier:    case += 2
 
-            if case == 0:                  # lower case all words
+            if case == 0:                 # lower case all words
                 for i in range(start_size,len(output)):
                     output[i] = output[i].lower()
-            elif case == 1:                # capitalize first letter of each word
+            elif case == 1:               # capitalize first letter of each word
                 for i in range(start_size,len(output)):
                     output[i] = output[i].title()
-            elif case == 2: # capitalize the first word and lower case the others.
+            elif case == 2: # capitalize the first word and lower case others.
                 for i in range(start_size,len(output)):
-                    if i == start_size:  #  find the first word
-                        split_pattern = re.compile("([\-\s]+|[^\-\s]+)")
-                        #split_pattern = re.compile("(\s+|\S+)")
+                    if i == start_size:   #  find the first word
+                        split_pattern = re.compile("(\s+|\S+)")
                         sub_list = split_pattern.findall(output[i])
                         found = False
                         for j in range(len(sub_list)):
                             if not found:
                                 if re.match("\S+", sub_list[j]):
-                                    sub_list[j] = sub_list[j].title()
+                                    sub_list[j] = sub_list[j].capitalize()
                                     found = True
                             else: sub_list[j] = sub_list[j].lower()
                         output[i] = "".join(sub_list)
@@ -459,6 +458,9 @@ def r(prefix_args, colon_modifier, at_modifier, args):
     if at_modifier: return roman.int_to_roman(i)
     return int2num.spoken_number(i)
 
+def ampersand(prefix_args, colon_modifier, at_modifier, args):
+    return "\n"
+
 def asterisk(prefix_args, colon_modifier, at_modifier, args):
     if prefix_args[0] is None:        n=1
     else:                             n=prefix_args[0]
@@ -504,5 +506,5 @@ if __name__ == '__main__':
     import pytests
 
     doctest.testmod(test)
-    #doctest.testmod(hyperspec_tests)
+    doctest.testmod(hyperspec_tests)
     doctest.testmod(pytests)
