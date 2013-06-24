@@ -6,102 +6,122 @@ import roman
 
 # funny pep: http://www.python.org/dev/peps/pep-0313/
 
-def parse_prefix_arg(a):
-    """look for a single prefix argument. This can be v, #, a positive or
-    integer or a single character prefixed by a ' (single quote)
+
+def parse_directive(control_string):
+    """Input is a control string deque starting at a directive (with the ~
+    already removed). The return value is a tuple of (directive_type,
+    prefix_args, colon_modifier, at_modifier). The control_string
+    deque is altered in place.
+
     """
-    s="".join(a)
-    mobj = re.match(r"([+-]?[0-9]+|v|#|'.)",s)
-    if mobj:
-        arg=mobj.group()
-        for i in range(len(arg)): a.popleft()
-        return arg
-    else:
-        return None
-
-def parse_prefix_arg_list(a):
-    "return list of prefix args"
-    prefix_args=[None,None,None,None]
-    arg = parse_prefix_arg(a)
-    if arg: prefix_args[0]=arg
-    for i in range(1,4):
-        if a[0]==",":
-            a.popleft()
-            arg = parse_prefix_arg(a)
-            if arg: prefix_args[i]=arg
-    return prefix_args
-
-def parse_directive_modifiers(a):
-    colon_modifier, at_modifier = False, False
-    if a[0]==":" or a[0]=="@":
-        if a.popleft()==":":
-            colon_modifier=True
+    def parse_single_prefix_arg(control_string):
+        """look for a single prefix argument. This can be v, #, a positive or
+        integer or a single character prefixed by a ' (single quote)
+        """
+        s="".join(control_string)
+        mobj = re.match(r"([+-]?[0-9]+|v|#|'.)",s)
+        if mobj:
+            arg=mobj.group()
+            for i in range(len(arg)): control_string.popleft()
+            return arg
         else:
-            at_modifier=True
-    if a[0]==":" or a[0]=="@":
-        if a.popleft()==":":
-            if colon_modifier: raise Exception("More than one : in directive")
-            colon_modifier=True
-        else:
-            if at_modifier: raise Exception("More than one @ in directive")
-            at_modifier=True
-    return colon_modifier, at_modifier
+            return None
 
-def parse_directive_type(a):
-    if a[0].isalnum():
-        a[0]=a[0].lower()
-    if a[0] in "%&|t<>c()dboxrpfeg$as~<>{}[];^*":
-        return a.popleft()
-    raise Exception("unknown directive type %s", a[0])
+    def parse_prefix_arg_list(control_string):
+        "return list of prefix args"
+        prefix_args=[None,None,None,None]
+        arg = parse_single_prefix_arg(control_string)
+        if arg: prefix_args[0]=arg
+        for i in range(1,4):
+            if control_string[0]==",":
+                control_string.popleft()
+                arg = parse_single_prefix_arg(control_string)
+                if arg: prefix_args[i]=arg
+        return prefix_args
 
-def parse_directive(a):
-    prefix_args = parse_prefix_arg_list(a)
-    colon_modifier, at_modifier  = parse_directive_modifiers(a)
-    directive_type = parse_directive_type(a)
+    def parse_directive_modifiers(control_string):
+        colon_modifier, at_modifier = False, False
+        if control_string[0]==":" or control_string[0]=="@":
+            if control_string.popleft()==":":
+                colon_modifier=True
+            else:
+                at_modifier=True
+        if control_string[0]==":" or control_string[0]=="@":
+            if control_string.popleft()==":":
+                if colon_modifier: raise Exception("More than one : in directive")
+                colon_modifier=True
+            else:
+                if at_modifier: raise Exception("More than one @ in directive")
+                at_modifier=True
+        return colon_modifier, at_modifier
+
+    def parse_directive_type(control_string):
+        if control_string[0].isalnum():
+            control_string[0]=control_string[0].lower()
+        if control_string[0] in directive_list:
+            return control_string.popleft()
+        raise Exception("unknown directive type %s", control_string[0])
+
+    prefix_args = parse_prefix_arg_list(control_string)
+    colon_modifier, at_modifier  = parse_directive_modifiers(control_string)
+    directive_type = parse_directive_type(control_string)
     return (directive_type, prefix_args, colon_modifier, at_modifier)
 
+
 def tokenize(control_string):
-    a=deque(control_string)
+    """Given the format control string return a list of tokens. Each token
+    is either (i) a string or (ii) a tuple describing a directive (as
+    returned by parse_directive())).
+
+    """
+    control_string=deque(control_string)
     out=['']
-    while a:
-        char = a.popleft()
+    while control_string:
+        char = control_string.popleft()
         if char=="~":
             if out[-1]=='':
-                out[-1] = parse_directive(a)
+                out[-1] = parse_directive(control_string)
             else:
-                out.append(parse_directive(a))
+                out.append(parse_directive(control_string))
             out.append('')
         else:
             out[-1] += char
     return out
 
-class Node(object):
-    """Represent a node in the syntax tree of the format language """
-    def __init__(self, parent, value):
-        self.parent = parent
-        self.children = []
-        self.value = value
-    def add_child(self, child_value):
-        self.children.append(Node(self, child_value))
-        return self.children[-1]
-
 def build_tree(token_list):
+    """Read the token list return by tokenize and build a tree
+    representing the (possibly nested) directives and string
+
+
+    """
     pair_directives = "[<({"
     compliment = {"[":"]", "{":"}", "(":")", "<":">"}
 
-    def build_tree(parent, tl):
+
+    class Node(object):
+        """Represent a node in the syntax tree of the format language """
+        def __init__(self, parent, value):
+            self.parent = parent
+            self.children = []
+            self.value = value
+        def add_child(self, child_value):
+            self.children.append(Node(self, child_value))
+            return self.children[-1]
+
+
+    def build_tree(parent, token_list):
         """This function is called recursively to transform the token list
         into a tree. The paired directives created a nested tree of
-        strings and directives.
+        strings and directives. Here token_list is a deque.
 
         """
-        while len(tl):
-            if type(tl[0])==str:                        #  string node
-                parent.add_child(tl.popleft())
+        while len(token_list):
+            if type(token_list[0])==str:                        #  string node
+                parent.add_child(token_list.popleft())
             else:                                       #  directive node
-                char = tl[0][0]
+                char = token_list[0][0]
                 if char in pair_directives:
-                    current = parent.add_child(tl.popleft())
+                    current = parent.add_child(token_list.popleft())
                     # search forward for closing directive be carefull
                     # here as there may be nested directives of the
                     # same type
@@ -110,32 +130,32 @@ def build_tree(token_list):
                     child_tokens = [] # collect children & call build_tree()
                     looking = True
                     while looking:
-                        if len(tl)==0:
+                        if len(token_list)==0:
                             raise Exception("End of format string before \
                                              finding closing %s" % closing_char)
-                        if type(tl[0])==str:            #  string node
-                            child_tokens.append(tl.popleft())
+                        if type(token_list[0])==str:            #  string node
+                            child_tokens.append(token_list.popleft())
                         else:                           #  directive node
-                            nested_char = tl[0][0]
+                            nested_char = token_list[0][0]
                             if nested_char == char:
                                 nested_count += 1
-                                child_tokens.append(tl.popleft())
+                                child_tokens.append(token_list.popleft())
                             elif nested_char == closing_char:
                                 if nested_count == 0:
-                                    tl.popleft()  #  drop the closing directives
+                                    token_list.popleft()  #  drop the closing directives
                                     looking = False
                                 else:
-                                    child_tokens.append(tl.popleft())
+                                    child_tokens.append(token_list.popleft())
                                     nested_count -= 1
                             else:
-                                child_tokens.append(tl.popleft())
+                                child_tokens.append(token_list.popleft())
                     build_tree(current, deque(child_tokens))
                 else:                                   #  normal directive
-                    parent.add_child(tl.popleft())
+                    parent.add_child(token_list.popleft())
 
     top = Node(None, None)
-    tl = deque(token_list)
-    build_tree(top,tl)
+    token_list = deque(token_list)
+    build_tree(top,token_list)
     return top
 
 class ArgumentList(object):
@@ -192,9 +212,6 @@ class CompiledCLFormatControlString(object):
         return "CLFormat Compiled Control String: %s" % self.control_string
 
     def __call__(self, in_args):
-        directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
-                               's':s, '%':percent, "o":o, 'r':r, "p":p,
-                               "^":circumflex, "*":asterisk, "&": ampersand}
         self.args = ArgumentList(in_args)
         output=[]
         self.capitalization = False
@@ -482,12 +499,21 @@ def clformat(control_string, *args):
     print ret
     #return ret
 
+directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
+                       's':s, '%':percent, "o":o, 'r':r, "p":p,
+                       "^":circumflex, "*":asterisk, "&": ampersand}
+
+directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
+
 if __name__ == '__main__':
-    assert parse_prefix_arg_list(deque(",,'.,4d"))==[None, None, "'.", '4']
-    assert parse_prefix_arg_list(deque("-2,-4:@x"))==['-2', '-4', None, None]
-    assert parse_prefix_arg_list(deque("v,'^,#,-302':@x"))==  \
-        ['v',"'^","#",'-302']
-    assert parse_prefix_arg_list(deque("'2,-4:@x"))==["'2",'-4',None,None]
+    assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4'], \
+                                               False, False)
+    assert parse_directive(deque("-2,-4:@x"))==("x", ['-2', '-4', None, None], \
+                                                True, True)
+    assert parse_directive(deque("v,'^,#,-302:@x"))==  \
+        ("x", ['v',"'^","#",'-302'], True,True)
+    assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None], True, \
+                                                True)
 
 
     clformat("~3,-4:@x", 101)
@@ -505,6 +531,6 @@ if __name__ == '__main__':
     import hyperspec_tests
     import pytests
 
-    doctest.testmod(test)
-    doctest.testmod(hyperspec_tests)
-    doctest.testmod(pytests)
+    doctest.testmod(test, verbose=False)
+    doctest.testmod(hyperspec_tests, verbose=False)
+    doctest.testmod(pytests, verbose=False)
