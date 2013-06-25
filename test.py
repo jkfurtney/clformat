@@ -123,96 +123,110 @@ How is bob smith?
 | 70 71 72 73 74 75 76 77 78 79 |
 | 80 81 82 83 84 85 86 87 88 89 |
 | 90 91 92 93 94 95 96 97 98 99 |
->>> clformat("~5t~a ~15t~a ~25t~a~%", "rain", "rain", "cat")
-     rain      rain      cat
+>>> clformat("~5t~a ~15t~a ~25t~a~%", "lightning", "rain", "stipulate")
+     lightning  rain     stipulate
 
->>> clformat("~5t~a ~15t~a ~25t~a~%", "lightning", "stipulate", "rain")
-     lightning  stipulate  rain
+>>> clformat("~5t~a ~15t~a ~25t~a~%", "thunder", "pattern", "stipulate")
+     thunder   pattern   stipulate
 
->>> clformat("~5t~a ~15t~a ~25t~a~%", "lightning", "lightning", "iPhone")
-     lightning  lightning  iPhone
+>>> clformat("~5t~a ~15t~a ~25t~a~%", "lightning", "lightning", "thunder")
+     lightning  lightning  thunder
 
->>> clformat("~5t~a ~15t~a ~25t~a~%", "stipulate", "thunder", "lightning")
-     stipulate  thunder  lightning
+>>> clformat("~5t~a ~15t~a ~25t~a~%", "iPhone", "thunder", "stipulate")
+     iPhone    thunder   stipulate
 
->>> clformat("~30<~a~;~a~;~a~>~%", "thunder", "pattern", "lightning")
-thunder   pattern    lightning
+>>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "lightning", "pattern")
+iPhone    lightning    pattern
 
->>> clformat("~30<~a~;~a~;~a~>~%", "thunder", "rain", "stipulate")
-thunder     rain     stipulate
+>>> clformat("~30<~a~;~a~;~a~>~%", "pattern", "pattern", "pattern")
+pattern    pattern     pattern
 
->>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "rain", "rain")
-iPhone        rain        rain
+>>> clformat("~30<~a~;~a~;~a~>~%", "thunder", "stipulate", "thunder")
+thunder   stipulate    thunder
 
->>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "cat", "pattern")
-iPhone       cat       pattern
+>>> clformat("~30<~a~;~a~;~a~>~%", "pattern", "thunder", "stipulate")
+pattern   thunder    stipulate
 
->>> clformat("~30<~a~;~a~;~a~>~%", "pattern", "cat", "iPhone")
-pattern       cat       iPhone
+>>> clformat("~30<~a~;~a~;~a~>~%", "rain", "thunder", "thunder")
+rain      thunder      thunder
 
->>> clformat("~30<~a~;~a~;~a~>~%", "rain", "iPhone", "iPhone")
-rain       iPhone       iPhone
+>>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "stipulate", "lightning")
+iPhone   stipulate   lightning
 
->>> clformat("~30<~a~;~a~;~a~>~%", "rain", "thunder", "iPhone")
-rain      thunder       iPhone
+>>> clformat("~30<~a~;~a~;~a~>~%", "stipulate", "cat", "pattern")
+stipulate     cat      pattern
 
->>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "iPhone", "pattern")
-iPhone     iPhone      pattern
+>>> clformat("~30<~a~;~a~;~a~>~%", "cat", "iPhone", "iPhone")
+cat       iPhone        iPhone
 
->>> clformat("~30<~a~;~a~;~a~>~%", "cat", "cat", "pattern")
-cat        cat         pattern
+>>> clformat("~30<~a~;~a~;~a~>~%", "iPhone", "lightning", "rain")
+iPhone     lightning      rain
 
->>> clformat("~30<~a~;~a~;~a~>~%", "rain", "iPhone", "lightning")
-rain     iPhone      lightning
+>>> clformat("~30<~a~;~a~;~a~>~%", "rain", "lightning", "pattern")
+rain     lightning     pattern
 
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "thunder", "lightning")
-  thunder   
-  thunder   
- lightning  
-
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "iPhone", "iPhone", "rain")
-   iPhone   
-   iPhone   
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "rain", "cat", "lightning")
     rain    
-
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "cat", "lightning", "pattern")
     cat     
  lightning  
-  pattern   
 
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "rain", "lightning", "lightning")
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "rain", "rain")
+  thunder   
     rain    
- lightning  
- lightning  
-
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "lightning", "iPhone")
- lightning  
- lightning  
-   iPhone   
-
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "rain", "thunder", "thunder")
     rain    
-  thunder   
-  thunder   
 
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "iPhone", "thunder")
-  thunder   
-   iPhone   
-  thunder   
-
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "pattern", "cat")
-  thunder   
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "thunder", "cat")
   pattern   
+  thunder   
     cat     
 
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "iPhone", "thunder")
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "cat", "stipulate")
   pattern   
-   iPhone   
-  thunder   
+    cat     
+ stipulate  
 
->>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "thunder", "pattern")
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "cat", "thunder", "iPhone")
+    cat     
+  thunder   
+   iPhone   
+
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "rain", "iPhone")
+  pattern   
+    rain    
+   iPhone   
+
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "lightning", "thunder")
+  thunder   
  lightning  
   thunder   
-  pattern   
 
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "rain", "iPhone")
+ lightning  
+    rain    
+   iPhone   
+
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "lightning", "rain")
+ lightning  
+ lightning  
+    rain    
+
+>>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "cat", "rain", "thunder")
+    cat     
+    rain    
+  thunder   
+
+>>> clformat("~36r", 3458734089537)
+184x4z3nl
+>>> clformat("~3r", 3458734089537)
+110020122121010101112111110
+>>> clformat("~,,':,2:x", 216737651708446)
+c5:1f:2a:bd:52:1e
+>>> clformat("~r", 4)
+four
+>>> clformat("~:r", 4)
+fourth
+>>> clformat("~@r", 4)
+IV
+>>> clformat("~:@r", 4)
+IIII
     """ 

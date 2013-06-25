@@ -443,10 +443,15 @@ def o(prefix_args, colon_modifier, at_modifier, args):
 
 def r(prefix_args, colon_modifier, at_modifier, args):
     i = args.popleft()
-    if not type(i) is int:
+    if not ((type(i) is int) or (type(i) is long)):
         raise ValueError("Argument to directive r must be an integer")
-    if at_modifier: return int_to_roman(i)
-    return int2num.spoken_number(i)
+    if prefix_args[0] is None:
+        if at_modifier:
+            return int_to_roman(i)
+        return int2num.spoken_number(i)
+    else:
+        radix = int(prefix_args[0])
+        return base10toN(i, radix)
 
 # floating point directives: E F G $
 
@@ -541,5 +546,5 @@ if __name__ == '__main__':
     import pytests
 
     doctest.testmod(test, verbose=False)
-    doctest.testmod(hyperspec_tests, verbose=False)
+    #doctest.testmod(hyperspec_tests, verbose=False)
     doctest.testmod(pytests, verbose=False)

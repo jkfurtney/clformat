@@ -117,6 +117,15 @@ expected result is found by evaluating the format expression in lisp."
   (dotimes (i 10)
     (format-test "~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%"
 		 (random-word) (random-word) (random-word)))
+
+  (format-test "~36r" 3458734089537)
+  (format-test "~3r" 3458734089537)
+  (format-test "~,,':,2:x" #x0c51f2abd521e)
+  (format-test "~r" 4)
+  (format-test "~:r" 4)
+  (format-test "~@r" 4)
+  (format-test "~:@r" 4)
+
   )
 
 
