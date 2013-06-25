@@ -12,7 +12,8 @@ tests. The tests are defined by the format test-macro"
 
 ; fix this to handle path to string and floats properly
 (defun python-form (arg)
-  "Given a lisp object of any type try to convert it into a form suitable for parsing by python. Does not process nested lists"
+  "Given a lisp object of any type try to convert it into a form
+suitable for parsing by python. Does not process nested lists"
   (cond
     ((symbolp arg)
      (if arg               ; convert symbols to Strings
@@ -98,8 +99,24 @@ expected result is found by evaluating the format expression in lisp."
 
 
   (format-test "~@R ~(~@R~)" 14 14)
-
   (format-test "~@(how is ~:(BOB SMITH~)?~)")
+
+  (format-test "| ~{~<|~%| ~,33:;~2d ~>~}|" (loop for x below 100 collect x))
+
+  (defun random-word ()
+    (nth (random 7) '("cat" "iPhone" "rain" "thunder" "lightning" "stipulate" "pattern")))
+
+  (dotimes (i 4)
+    (format-test "~5t~a ~15t~a ~25t~a~%"
+		 (random-word) (random-word) (random-word)))
+
+  (dotimes (i 10)
+    (format-test "~30<~a~;~a~;~a~>~%"
+		 (random-word) (random-word) (random-word)))
+
+  (dotimes (i 10)
+    (format-test "~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%"
+		 (random-word) (random-word) (random-word)))
   )
 
 
