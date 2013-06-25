@@ -191,10 +191,11 @@ class ArgumentList(object):
             self.popleft()
 
 
-class CompiledCLFormatControlString(object):
-    def __init__(self, tree, control_string):
-        self.tree = tree
+class CLFormatter(object):
+    def __init__(self, control_string):
         self.control_string = control_string
+        token_list = tokenize(control_string)
+        self.tree = build_tree(token_list)
 
     def print_tree(self):
         """
@@ -213,12 +214,13 @@ class CompiledCLFormatControlString(object):
 
         print_node(self.tree, 0)
     def __repr__(self):
-        return "CLFormat Compiled Control String: %s" % self.control_string
+        return "<CLFormatter: %s>" % self.control_string
 
     def __call__(self, in_args):
         self.args = ArgumentList(in_args)
         output=[]
         self.capitalization = False
+
         def pre_process_prefix_args(prefix_args):
             """look for # or v as prefix args and replace them with the
             number of remaining args or pop an arg off. Returns a new
@@ -407,7 +409,8 @@ class CompiledCLFormatControlString(object):
             return 1
 
         process_node(self.tree, output)
-        return output
+        return "".join(output)
+
 
 # directive functions
 # general directives: A and S
@@ -442,7 +445,7 @@ def r(prefix_args, colon_modifier, at_modifier, args):
     i = args.popleft()
     if not type(i) is int:
         raise ValueError("Argument to directive r must be an integer")
-    if at_modifier: return roman.int_to_roman(i)
+    if at_modifier: return int_to_roman(i)
     return int2num.spoken_number(i)
 
 # floating point directives: E F G $
@@ -508,16 +511,8 @@ directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
 
 
 def clformat(control_string, *args):
-    token_list = tokenize(control_string)
-    #pprint(token_list)
-    tree = build_tree(token_list)
-    cfmt = CompiledCLFormatControlString(tree, control_string)
-    #cfmt.print_tree()
-    #cfmt(args)
-    #print cfmt
-    ret = "".join(cfmt(args))
-    print ret
-    #return ret
+    formatter = CLFormatter(control_string)
+    print formatter(args)
 
 
 if __name__ == '__main__':
