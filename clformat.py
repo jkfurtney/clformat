@@ -190,8 +190,10 @@ class ArgumentList(object):
         for i in range(n-1):
             self.popleft()
 
-
 class CLFormatter(object):
+    """
+    User facing
+    """
     def __init__(self, control_string):
         self.control_string = control_string
         token_list = tokenize(control_string)
@@ -216,212 +218,66 @@ class CLFormatter(object):
     def __repr__(self):
         return "<CLFormatter: %s>" % self.control_string
 
-    def __call__(self, in_args):
-        self.args = ArgumentList(in_args)
-        output=[]
-        self.capitalization = False
+    def __call__(self, args):
+        executor = FormatExecutor(self.tree, ArgumentList(args))
+        return "".join(executor.output)
 
-        def pre_process_prefix_args(prefix_args):
-            """look for # or v as prefix args and replace them with the
-            number of remaining args or pop an arg off. Returns a new
-            prefix list.
+class FormatExecutor(object):
+    def __init__(self, tree, args):
+        self.tree = tree
+        self.args = args
+        self.output=[]
+        self.process_node(self.tree, self.output)
 
-            """
-            local_prefix_args = [None,None,None,None]
-            for i in range(len(prefix_args)):
-                if prefix_args[i]=='#':
-                    local_prefix_args[i] = len(self.args)
-                elif prefix_args[i]=='v':
-                    varg = self.args.popleft()
-                    assert type(varg)==int or type(varg)==str
-                    local_prefix_args[i] = varg
-                else:
-                    local_prefix_args[i]=prefix_args[i]
-            return local_prefix_args
-
-        def process_conditional(node, output):
-            """
-            Conditional directive ~[
-            missing : and @ functionality
-            """
-            directive, prefix_args, colon_modifier, at_modifier = node.value
-            assert directive == "["
-            local_prefix_args = pre_process_prefix_args(prefix_args)
-            if local_prefix_args[0] is None:
-                index = self.args.popleft()
-                assert type(index)==int
-            else:
-                index = local_prefix_args[0]
-                assert type(index)==int
-            current=0
-            child_deque = deque(node.children[:])   #  a copy
-            while child_deque:
-                if current == index:  #  we found what we are looking for
-                    # process nodes until the next ~; or empty
-                    while True:
-                        if len(child_deque)==0:
-                            return 1 # should never get here
-                        cnode = child_deque.popleft()
-                        if type(cnode.value)==str:
-                            process_node(cnode, output)
-                        elif cnode.value[0]==";":
-                            break
-                        else:
-                            ret = process_node(cnode,output)
-                            if ret is None: return None
-                    return 1
-                # looking for correct clause
-                cnode = child_deque.popleft()
-                if type(cnode.value)==str:
-                    pass
-                elif cnode.value[0]==";":
-                    if cnode.value[2]:
-                        current = index
-                    else:
-                        current+=1
-            return 1
-
-        def process_list(node, output):
-            """Looping directive {. No : functionality. also fix to support ~:}
-            which will process the body atleast once
-
-            : argument should be a list of lists. Each pass over the
-            children nodes should use one of the sublists as arg
-
-            """
-            directive, prefix_args, colon_modifier, at_modifier = node.value
-            assert directive == "{"
-            local_prefix_args = pre_process_prefix_args(prefix_args)
-            if prefix_args[0] is None:
-                max_iteration = 1e8
-            else:
-                max_iteration = prefix_args[0]
-                assert type(max_iteration) == int
-
-            if at_modifier:
-                pass
-            else:
-                old_args = self.args
-                self.args = deque(old_args.popleft())
-
-            iteration = 0
-            while self.args:
-                if iteration >= max_iteration:
-                    break
-                for child_node in node.children:
-                    ret = process_node(child_node, output)
-                    if ret is None:
-                        iteration=max_iteration
-                        break
-                iteration += 1
-
-            if at_modifier:
-                pass
-            else:
-                self.args=old_args
-
-
-        def process_capitalization(node, output):
-            """
-            (
-            """
-            directive, prefix_args, colon_modifier, at_modifier = node.value
-            assert directive=="("
-            local_prefix_args = pre_process_prefix_args(prefix_args)
-
-            self.capitalization=True
-            start_size = len(output)
-            ret = 1
-            for child in node.children:
-                ret = process_node(child, output)
+    def process_node(self, node, output):
+        """
+        Return None to break out of directive
+        """
+        if type(node.value)==str:
+            output.append(node.value)
+        else:
+            if node.value:       # process directive
+                directive = node.value[0]
+                if directive in directive_functions:
+                    func = directive_functions[directive]
+                    ret = func(node, self.args, self)
+                    if ret is None: return None
+                    output.append(ret)
+                else:            # un implimented directive
+                    output.append(directive)
+            for child_node in node.children:
+                ret = self.process_node(child_node, output)
                 if ret is None: break
-            self.capitalization=False
+        return ""
 
-            # now retroactively do the capitalization
-            case = 0
-            if colon_modifier: case += 1
-            if at_modifier:    case += 2
+def pre_process_prefix_args(prefix_args, args):
+    """look for # or v as prefix args and replace them with the
+    number of remaining args or pop an arg off. Returns a new
+    prefix list.
 
-            if case == 0:                 # lower case all words
-                for i in range(start_size,len(output)):
-                    output[i] = output[i].lower()
-            elif case == 1:               # capitalize first letter of each word
-                for i in range(start_size,len(output)):
-                    output[i] = output[i].title()
-            elif case == 2: # capitalize the first word and lower case others.
-                for i in range(start_size,len(output)):
-                    if i == start_size:   #  find the first word
-                        split_pattern = re.compile("(\s+|\S+)")
-                        sub_list = split_pattern.findall(output[i])
-                        found = False
-                        for j in range(len(sub_list)):
-                            if not found:
-                                if re.match("\S+", sub_list[j]):
-                                    sub_list[j] = sub_list[j].capitalize()
-                                    found = True
-                            else: sub_list[j] = sub_list[j].lower()
-                        output[i] = "".join(sub_list)
-                    else: output[i] = output[i].lower()
-
-            elif case == 3:                # Upper case all words
-                for i in range(start_size,len(output)):
-                    output[i] = output[i].upper()
-            else:
-                raise Exception("should not get here")
-            return ret
-
-            # post process capitalization by altering the output list.
-
-        def process_node(node, output):
-            if type(node.value)==str:
-                output.append(node.value)
-            else:
-                if node.value:       # process directive
-                    directive = node.value[0]
-                    if directive in directive_functions:
-                        func = directive_functions[directive]
-                        _, prefix_args, colon_modifier,at_modifier = node.value
-                        local_prefix_args = pre_process_prefix_args(prefix_args)
-                        ret = func(prefix_args, colon_modifier,
-                                   at_modifier, self.args)
-                        if ret is None: return None
-                        output.append(ret)
-                    elif directive=='[':
-                        ret = process_conditional(node, output)
-                        if ret is None: return None
-                        return 1
-                    elif directive=='{':
-                        process_list(node, output)
-                        return 1
-                    elif directive=='(':
-                        if self.capitalization:
-                            pass
-                        else:
-                            ret = process_capitalization(node, output)
-                            if ret is None: return None
-                            return 1
-                    else:
-                        # un implimented directive
-                        output.append(directive)
-                for child_node in node.children:
-                    ret = process_node(child_node, output)
-                    if ret is None: break
-            return 1
-
-        process_node(self.tree, output)
-        return "".join(output)
-
+    """
+    local_prefix_args = [None,None,None,None]
+    for i in range(len(prefix_args)):
+        if prefix_args[i]=='#':
+            local_prefix_args[i] = len(args)
+        elif prefix_args[i]=='v':
+            varg = self.args.popleft()
+            assert type(varg)==int or type(varg)==str
+            local_prefix_args[i] = varg
+        else:
+            local_prefix_args[i]=prefix_args[i]
+    return local_prefix_args
 
 # directive functions
 # general directives: A and S
-def a(prefix_args, colon_modifier, at_modifier, args):
-    """
-    """
+def a(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return str(args.popleft())
 
-def s(prefix_args, colon_modifier, at_modifier, args):
-    """
-    """
+def s(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     arg=args.popleft()
     if type(arg)==str:
         return '"%s"' % arg
@@ -429,19 +285,29 @@ def s(prefix_args, colon_modifier, at_modifier, args):
         return str(arg)
 
 # integer directives: d x b o and r
-def d(prefix_args, colon_modifier, at_modifier, args):
+def d(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return "%i" % args.popleft()
 
-def x(prefix_args, colon_modifier, at_modifier, args):
+def x(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return "%x" % args.popleft()
 
-def b(prefix_args, colon_modifier, at_modifier, args):
+def b(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return bin(args.popleft())[2:]
 
-def o(prefix_args, colon_modifier, at_modifier, args):
+def o(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return "%o" % args.popleft()
 
-def r(prefix_args, colon_modifier, at_modifier, args):
+def r(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     i = args.popleft()
     if not ((type(i) is int) or (type(i) is long)):
         raise ValueError("Argument to directive r must be an integer")
@@ -454,24 +320,33 @@ def r(prefix_args, colon_modifier, at_modifier, args):
         return base10toN(i, radix)
 
 # floating point directives: E F G $
-
-def e(prefix_args, colon_modifier, at_modifier, args):
+def e(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     pass
 
-def f(prefix_args, colon_modifier, at_modifier, args):
+def f(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     pass
 
-def g(prefix_args, colon_modifier, at_modifier, args):
+def g(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     pass
 
-def dollar(prefix_args, colon_modifier, at_modifier, args):
+def dollar(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     pass
 
 # special non-pair directives P ^ ~ % & *
-def p(prefix_args, colon_modifier, at_modifier, args):
+def p(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+
     if colon_modifier:   value = args.used_data[-1]
     else:                value = args.popleft()
-
     if at_modifier:
         single_suffix = "y"
         plural_suffix = "ies"
@@ -482,24 +357,37 @@ def p(prefix_args, colon_modifier, at_modifier, args):
     if args.used_data[-1]==1: return single_suffix
     else:                     return plural_suffix
 
-def circumflex(prefix_args, colon_modifier, at_modifier, args):  # ^
+def circumflex(node, args, executor):  # ^
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+
     if len(args)==0:
         return None
     else:
         return ""
 
-def tilda(prefix_args, colon_modifier, at_modifier, args):
+def tilda(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+
     if prefix_args[0] is None:        n=1
     else:                             n=prefix_args[0]
     return "~"*n
 
-def percent(prefix_args, colon_modifier, at_modifier, args):
+def percent(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return ""
 
-def ampersand(prefix_args, colon_modifier, at_modifier, args):
+def ampersand(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
     return "\n"
 
-def asterisk(prefix_args, colon_modifier, at_modifier, args):
+def asterisk(node, args, executor):
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+
     if prefix_args[0] is None:        n=1
     else:                             n=prefix_args[0]
     if colon_modifier: args.rewind(n)
@@ -508,12 +396,142 @@ def asterisk(prefix_args, colon_modifier, at_modifier, args):
     else:
         for i in range(n): args.popleft()
 
+# pair directives [ { (
+def conditional(node, args, executor):
+    """
+    Conditional directive ~[
+    missing : and @ functionality
+    """
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+    assert directive == "["
+    if prefix_args[0] is None:
+        index = args.popleft()
+        assert type(index)==int
+    else:
+        index = prefix_args[0]
+        assert type(index)==int
+    current=0
+    child_deque = deque(node.children[:])   #  a copy
+    while child_deque:
+        if current == index:  #  we found what we are looking for
+            # process nodes until the next ~; or empty
+            while True:
+                cnode = child_deque.popleft()
+                if type(cnode.value)==str:
+                    executor.process_node(cnode, executor.output)
+                elif cnode.value[0]==";":
+                    break
+                else:
+                    ret = executor.process_node(cnode, executor.output)
+                    if ret is None: return None
+            return ""
+        # looking for correct clause
+        cnode = child_deque.popleft()
+        if type(cnode.value)==str:
+            pass
+        elif cnode.value[0]==";":
+            if cnode.value[2]:
+                current = index
+            else:
+                current+=1
+    return ""
+
+def list_(node, args, executor):
+    """Looping directive {. No : functionality. also fix to support ~:}
+    which will process the body atleast once
+
+    : argument should be a list of lists. Each pass over the
+    children nodes should use one of the sublists as arg
+
+    """
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+    assert directive == "{"
+    if prefix_args[0] is None:
+        max_iteration = 1e8
+    else:
+        max_iteration = prefix_args[0]
+        assert type(max_iteration) == int
+
+    if at_modifier:
+        pass
+    else:
+        old_args = executor.args
+        executor.args = deque(old_args.popleft())
+
+    iteration = 0
+    while args:
+        if iteration >= max_iteration:
+            break
+        for child_node in node.children:
+            ret = executor.process_node(child_node, executor.output)
+            if ret is None:
+                iteration = max_iteration
+                break
+        iteration += 1
+
+    if at_modifier:
+        pass
+    else:
+        executor.args = old_args
+    return ""
+
+def capitalization(node, args, executor):
+    """
+    (
+    """
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    assert directive=="("
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+
+    output = executor.output
+    start_size = len(output)
+    ret = ""
+    for child in node.children:
+        ret = executor.process_node(child, output)
+        if ret is None: break
+
+    # now retroactively do the capitalization
+    case = 0
+    if colon_modifier: case += 1
+    if at_modifier:    case += 2
+
+    if case == 0:                 # lower case all words
+        for i in range(start_size,len(output)):
+            output[i] = output[i].lower()
+    elif case == 1:               # capitalize first letter of each word
+        for i in range(start_size,len(output)):
+            output[i] = output[i].title()
+    elif case == 2: # capitalize the first word and lower case others.
+        for i in range(start_size,len(output)):
+            if i == start_size:   #  find the first word
+                split_pattern = re.compile("(\s+|\S+)")
+                sub_list = split_pattern.findall(output[i])
+                found = False
+                for j in range(len(sub_list)):
+                    if not found:
+                        if re.match("\S+", sub_list[j]):
+                            sub_list[j] = sub_list[j].capitalize()
+                            found = True
+                    else: sub_list[j] = sub_list[j].lower()
+                output[i] = "".join(sub_list)
+            else: output[i] = output[i].lower()
+
+    elif case == 3:                # Upper case all words
+        for i in range(start_size,len(output)):
+            output[i] = output[i].upper()
+    else:
+        raise Exception("should not get here")
+    return ret
+
+
 directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                        's':s, '%':percent, "o":o, 'r':r, "p":p,
-                       "^":circumflex, "*":asterisk, "&": ampersand}
+                       "^":circumflex, "*":asterisk, "&": ampersand,
+                       "[":conditional, "{":list_, "(":capitalization }
 
 directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
-
 
 def clformat(control_string, *args):
     formatter = CLFormatter(control_string)
@@ -546,5 +564,5 @@ if __name__ == '__main__':
     import pytests
 
     doctest.testmod(test, verbose=False)
-    #doctest.testmod(hyperspec_tests, verbose=False)
+    doctest.testmod(hyperspec_tests, verbose=False)
     doctest.testmod(pytests, verbose=False)
