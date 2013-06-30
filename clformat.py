@@ -283,26 +283,73 @@ def s(node, args, executor):
     else:
         return str(arg)
 
+#width, padchar, comma char, comma interval
 # integer directives: d x b o and r
+
+def format_integer(number, string, at_modifier, colon_modifier, prefix_args):
+    if colon_modifier:
+        if prefix_args[2] is None:
+            comma_char = ","
+        else:
+            assert prefix_args[2][0] == "'"
+            comma_char = prefix_args[2][1]
+        if prefix_args[3] is None:
+            comma_interval = 3
+        else:
+            comma_interval = int(prefix_args[3])
+            assert comma_interval > 0
+        def split_len(seq, length):
+            return [seq[i:i+length] for i in range(0, len(seq), length)]
+        groups = split_len(string[::-1], comma_interval)
+        groups.reverse()
+        groups = [group[::-1] for group in groups]
+        string = comma_char.join(groups)
+    if at_modifier:
+        if number > 0:
+            string = "+" + string
+
+    # padding
+    if prefix_args[0] is None:
+        minimum_width = 0
+    else:
+        minimum_width = int(prefix_args[0])
+        assert minimum_width > 0
+    if prefix_args[1] is None:
+        pad_char = " "
+    else:
+        assert prefix_args[1][0] == "'"
+        pad_char = prefix_args[1][1]
+    if len(string) < minimum_width:
+        string = pad_char*(minimum_width-len(string)) + string
+    return string
+
 def d(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return "%i" % args.popleft()
+    number = args.popleft()
+    return format_integer(number, "%i" % number, at_modifier,
+                          colon_modifier, prefix_args)
 
 def x(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return "%x" % args.popleft()
+    number = args.popleft()
+    return format_integer(number, "%x" % number, at_modifier,
+                          colon_modifier, prefix_args)
 
 def b(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return bin(args.popleft())[2:]
+    number = args.popleft()
+    return format_integer(number, bin(number)[2:], at_modifier,
+                          colon_modifier, prefix_args)
 
 def o(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return "%o" % args.popleft()
+    number = args.popleft()
+    return format_integer(number, "%o" % number, at_modifier,
+                          colon_modifier, prefix_args)
 
 def r(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
@@ -557,10 +604,10 @@ if __name__ == '__main__':
     assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None], True, \
                                                 True)
 
-    clformat("~3,-4:@x", 101)
-    clformat("0x0~3,-4:@x", 10350)
+    clformat("~3,,,4:@x", 101)
+    clformat("~3,,,4:@x", 104534350)
     clformat("This is a hex number ~5x", 10)
-    clformat("~,,'.,4d", 36456096)
+    clformat("~,,'.,4:d", 36456096)
     clformat("this is just a string")
     clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 2)
 
@@ -574,6 +621,12 @@ if __name__ == '__main__':
 
     clformat("The lottery numbers are ~{~d ~}.", [85,33,40,23,89,93,29])
     clformat("Items: ~[Jason~;Kerry~;James~:;Simon~]",99)
+
+
+    clformat("The answer is ~D.", 5)
+    clformat("The answer is ~3D.", 5)
+    clformat("The answer is ~3,'0D.", 5)
+    clformat("The answer is ~:D.", 229345007)
 
     doctest.testmod(test, verbose=False)
     doctest.testmod(hyperspec_tests, verbose=False)
