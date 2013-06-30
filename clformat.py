@@ -227,7 +227,9 @@ class FormatExecutor(object):
         self.tree = tree
         self.args = args
         self.output=[]
-        self.process_node(self.tree, self.output)
+        for child_node in tree.children:
+            ret = self.process_node(child_node, self.output)
+            if ret is None: break
 
     def process_node(self, node, output):
         """
@@ -245,9 +247,6 @@ class FormatExecutor(object):
                     output.append(ret)
                 else:            # un implimented directive
                     output.append(directive)
-            for child_node in node.children:
-                ret = self.process_node(child_node, output)
-                if ret is None: break
         return ""
 
 def pre_process_prefix_args(prefix_args, args):
@@ -261,7 +260,7 @@ def pre_process_prefix_args(prefix_args, args):
         if prefix_args[i]=='#':
             local_prefix_args[i] = len(args)
         elif prefix_args[i]=='v':
-            varg = self.args.popleft()
+            varg = args.popleft()
             assert type(varg)==int or type(varg)==str
             local_prefix_args[i] = varg
         else:
@@ -417,6 +416,7 @@ def conditional(node, args, executor):
         if current == index:  #  we found what we are looking for
             # process nodes until the next ~; or empty
             while True:
+                if len(child_deque)==0: return ""
                 cnode = child_deque.popleft()
                 if type(cnode.value)==str:
                     executor.process_node(cnode, executor.output)
@@ -431,7 +431,7 @@ def conditional(node, args, executor):
         if type(cnode.value)==str:
             pass
         elif cnode.value[0]==";":
-            if cnode.value[2]:
+            if cnode.value[2]:          # colon modifier
                 current = index
             else:
                 current+=1
@@ -461,7 +461,7 @@ def list_(node, args, executor):
         executor.args = deque(old_args.popleft())
 
     iteration = 0
-    while args:
+    while executor.args:
         if iteration >= max_iteration:
             break
         for child_node in node.children:
@@ -525,13 +525,22 @@ def capitalization(node, args, executor):
         raise Exception("should not get here")
     return ret
 
+def justification(node, args, executor):
+    #just do nothing for now
+    for child in node.children:
+        ret = ""
+        ret = executor.process_node(child, executor.output)
+        if ret is None: break
+
+    return ret
 
 directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
                        's':s, '%':percent, "o":o, 'r':r, "p":p,
                        "^":circumflex, "*":asterisk, "&": ampersand,
-                       "[":conditional, "{":list_, "(":capitalization }
+                       "[":conditional, "{":list_, "(":capitalization,
+                       "<":justification}
 
-directive_list = "%&|t<>c()dboxrpfeg$as~<>{}[];^*"
+directive_list = "%&|tc()dboxrpfeg$as~<>{}[];^*"
 
 def clformat(control_string, *args):
     formatter = CLFormatter(control_string)
@@ -562,6 +571,9 @@ if __name__ == '__main__':
     import test
     import hyperspec_tests
     import pytests
+
+    clformat("The lottery numbers are ~{~d ~}.", [85,33,40,23,89,93,29])
+    clformat("Items: ~[Jason~;Kerry~;James~:;Simon~]",99)
 
     doctest.testmod(test, verbose=False)
     doctest.testmod(hyperspec_tests, verbose=False)
