@@ -50,6 +50,9 @@ def test():
     >>> clformat("Just print a ~~ please.", )
     Just print a ~ please.
 
+    >>> clformat("~@(~r~)~:* ~~s please: ~v~", 3)
+    Three ~s please: ~~~
+
     >>> clformat("This is ~a", "something")
     This is something
 

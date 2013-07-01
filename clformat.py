@@ -320,19 +320,11 @@ def s(node, args, executor):
 
 
 #width, padchar, comma char, comma interval
-# integer directives: d x b o and r
 def format_integer(number, string, at_modifier, colon_modifier, prefix_args):
     if colon_modifier:
-        if prefix_args[2] is None:
-            comma_char = ","
-        else:
-            assert prefix_args[2][0] == "'"
-            comma_char = prefix_args[2][1]
-        if prefix_args[3] is None:
-            comma_interval = 3
-        else:
-            comma_interval = int(prefix_args[3])
-            assert comma_interval > 0
+        comma_char = get_prefix_char(prefix_args[2], ",")
+        comma_interval = get_prefix_int(prefix_args[3], 3)
+        assert comma_interval > 0
         def split_len(seq, length):
             return [seq[i:i+length] for i in range(0, len(seq), length)]
         groups = split_len(string[::-1], comma_interval)
@@ -344,20 +336,14 @@ def format_integer(number, string, at_modifier, colon_modifier, prefix_args):
             string = "+" + string
 
     # padding
-    if prefix_args[0] is None:
-        minimum_width = 0
-    else:
-        minimum_width = int(prefix_args[0])
-        assert minimum_width > 0
-    if prefix_args[1] is None:
-        pad_char = " "
-    else:
-        assert prefix_args[1][0] == "'"
-        pad_char = prefix_args[1][1]
+    minimum_width = get_prefix_int(prefix_args[0])
+    assert minimum_width >= 0
+    pad_char = get_prefix_char(prefix_args[1])
     if len(string) < minimum_width:
         string = pad_char*(minimum_width-len(string)) + string
     return string
 
+# integer directives: d x b o and r
 def d(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
@@ -453,8 +439,7 @@ def tilda(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
 
-    if prefix_args[0] is None:        n=1
-    else:                             n=prefix_args[0]
+    n = get_prefix_int(prefix_args[0], 1)
     return "~"*n
 
 def percent(node, args, executor):
@@ -475,8 +460,7 @@ def asterisk(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
 
-    if prefix_args[0] is None:        n=1
-    else:                             n=int(prefix_args[0])
+    n = get_prefix_int(prefix_args[0], 1)
     if colon_modifier: args.rewind(n)
     elif at_modifier:
         args.goto(n)
