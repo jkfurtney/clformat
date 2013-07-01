@@ -1,6 +1,7 @@
 from pprint import pprint
 from collections import deque
 import re
+import math
 import int2num
 from utility import int_to_roman, base10toN
 
@@ -249,6 +250,9 @@ class FormatExecutor(object):
                     output.append(directive)
         return ""
 
+
+# directive helper functions
+
 def pre_process_prefix_args(prefix_args, args):
     """look for # or v as prefix args and replace them with the
     number of remaining args or pop an arg off. Returns a new
@@ -267,25 +271,55 @@ def pre_process_prefix_args(prefix_args, args):
             local_prefix_args[i]=prefix_args[i]
     return local_prefix_args
 
+def get_prefix_int(arg, default=0):
+    if arg is None: return default
+    return int(arg)
+
+def get_prefix_char(arg, default=" "):
+    if arg is None: return default
+    assert arg[0]=="'"
+    return arg[1]
+
+def pad_general(string, at_modifier, prefix_args):
+    mincol = get_prefix_int(prefix_args[0])
+    colinc = get_prefix_int(prefix_args[1], 1)
+    minpad = get_prefix_int(prefix_args[2])
+    pad_char = get_prefix_char(prefix_args[3])
+
+    if len(string) < mincol or minpad>0:
+        npad = int(math.ceil((mincol - len(string)) / colinc)) * colinc
+        if npad<0: npad=0
+        if len(string) + npad < mincol: npad+=colinc  # fix this
+        npad += minpad
+        if at_modifier:
+            return pad_char*npad + string
+        else:
+            return string + pad_char*npad
+    else:
+        return string
+
 # directive functions
 # general directives: A and S
 def a(node, args, executor):
+    # no equiv for : modifier here.
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return str(args.popleft())
+    return pad_general(str(args.popleft()), at_modifier, prefix_args)
+
 
 def s(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    arg=args.popleft()
+    arg = args.popleft()
     if type(arg)==str:
-        return '"%s"' % arg
+        string = '"%s"' % arg
     else:
-        return str(arg)
+        string = str(arg)
+    return pad_general(string, at_modifier, prefix_args)
+
 
 #width, padchar, comma char, comma interval
 # integer directives: d x b o and r
-
 def format_integer(number, string, at_modifier, colon_modifier, prefix_args):
     if colon_modifier:
         if prefix_args[2] is None:
@@ -609,33 +643,12 @@ if __name__ == '__main__':
     assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None], True, \
                                                 True)
 
-    clformat("~3,,,4:@x", 101)
-    clformat("~3,,,4:@x", 104534350)
-    clformat("This is a hex number ~5x", 10)
-    clformat("~,,'.,4:d", 36456096)
-    clformat("this is just a string")
-    clformat("Jason's cat: ~[Siamese~;Manx~;Persian~:;Alley~] Cat", 2)
-
-    # clformat("~{~a~#[~;, and ~:;, ~]~}",  [1,2,3])
-    #clformat("~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 
     import doctest
     import test
     import hyperspec_tests
     import pytests
 
-    clformat("The lottery numbers are ~{~d ~}.", [85,33,40,23,89,93,29])
-    clformat("Items: ~[Jason~;Kerry~;James~:;Simon~]",99)
-
-
-    clformat("The answer is ~D.", 5)
-    clformat("The answer is ~3D.", 5)
-    clformat("The answer is ~3,'0D.", 5)
-    clformat("The answer is ~:D.", 229345007)
-    clformat("~R dog~:*~[s are~; is~:;s are~] here.", 3)
-    clformat("~d ~:*~d", 1)
-    clformat("~d ~2*~d", 1,2,3,4)
-
-    doctest.testmod(test, verbose=False)
-    doctest.testmod(hyperspec_tests, verbose=False)
+    #doctest.testmod(test, verbose=False)
+    #doctest.testmod(hyperspec_tests, verbose=False)
     doctest.testmod(pytests, verbose=False)

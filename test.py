@@ -1,6 +1,6 @@
 from clformat import clformat
 def test():
-    """ 
+    """
 >>> clformat("foo", )
 foo
 >>> clformat("~5,'dd", 33)
@@ -12,7 +12,7 @@ ____+34*43
 >>> clformat("Just print a ~~ please.", )
 Just print a ~ please.
 >>> clformat("This is ~a ", "something")
-This is something 
+This is something
 >>> clformat("String ~s in a string~%", "Simon")
 String "Simon" in a string
 
@@ -29,11 +29,11 @@ String SIMON in a string
        559
    12
 >>> clformat("This is ~10@a with lots of space ", 10)
-This is         10 with lots of space 
+This is         10 with lots of space
 >>> clformat("This is ~10a with lots of space ", 10)
-This is 10         with lots of space 
+This is 10         with lots of space
 >>> clformat("This is ~10,3a with lots of space ", 10)
-This is 10          with lots of space 
+This is 10          with lots of space
 >>> clformat("This word ~,,4,'!a is big", "james")
 This word james!!!! is big
 >>> clformat("This word ~,,4,'!@a is big~%", "james")
@@ -49,19 +49,19 @@ This word !!!!james is big
 42 in octal is 52
 
 >>> clformat("floats ~f ~%", 22.7)
-floats 22.7 
+floats 22.7
 
 >>> clformat("floats ~5f ~%", 22.777773)
-floats 22.778 
+floats 22.778
 
 >>> clformat("floats ~9e ~%", 22.777773)
-floats 2.27778e+1 
+floats 2.27778e+1
 
 >>> clformat("~r ~%", 12345)
-twelve thousand three hundred forty-five 
+twelve thousand three hundred forty-five
 
 >>> clformat("~{~a, ~}~%", [1, 2, 3])
-1, 2, 3, 
+1, 2, 3,
 
 >>> clformat("~{~a~^, ~}~%", [1, 2, 3])
 1, 2, 3
@@ -166,54 +166,54 @@ iPhone     lightning      rain
 rain     lightning     pattern
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "rain", "cat", "lightning")
-    rain    
-    cat     
- lightning  
+    rain
+    cat
+ lightning
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "rain", "rain")
-  thunder   
-    rain    
-    rain    
+  thunder
+    rain
+    rain
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "thunder", "cat")
-  pattern   
-  thunder   
-    cat     
+  pattern
+  thunder
+    cat
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "cat", "stipulate")
-  pattern   
-    cat     
- stipulate  
+  pattern
+    cat
+ stipulate
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "cat", "thunder", "iPhone")
-    cat     
-  thunder   
-   iPhone   
+    cat
+  thunder
+   iPhone
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "pattern", "rain", "iPhone")
-  pattern   
-    rain    
-   iPhone   
+  pattern
+    rain
+   iPhone
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "thunder", "lightning", "thunder")
-  thunder   
- lightning  
-  thunder   
+  thunder
+ lightning
+  thunder
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "rain", "iPhone")
- lightning  
-    rain    
-   iPhone   
+ lightning
+    rain
+   iPhone
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "lightning", "lightning", "rain")
- lightning  
- lightning  
-    rain    
+ lightning
+ lightning
+    rain
 
 >>> clformat("~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%", "cat", "rain", "thunder")
-    cat     
-    rain    
-  thunder   
+    cat
+    rain
+  thunder
 
 >>> clformat("~36r", 3458734089537)
 184x4z3nl
@@ -229,4 +229,4 @@ fourth
 IV
 >>> clformat("~:@r", 4)
 IIII
-    """ 
+    """
