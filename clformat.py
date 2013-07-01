@@ -428,19 +428,24 @@ def percent(node, args, executor):
 def ampersand(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    return "\n"
+    if executor.output == []:
+        return ""
+    elif executor.output[-1][-1] == "\n":
+        return ""
+    else: return "\n"
 
 def asterisk(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
 
     if prefix_args[0] is None:        n=1
-    else:                             n=prefix_args[0]
+    else:                             n=int(prefix_args[0])
     if colon_modifier: args.rewind(n)
     elif at_modifier:
         args.goto(n)
     else:
         for i in range(n): args.popleft()
+    return ""
 
 # pair directives [ { (
 def conditional(node, args, executor):
@@ -627,6 +632,9 @@ if __name__ == '__main__':
     clformat("The answer is ~3D.", 5)
     clformat("The answer is ~3,'0D.", 5)
     clformat("The answer is ~:D.", 229345007)
+    clformat("~R dog~:*~[s are~; is~:;s are~] here.", 3)
+    clformat("~d ~:*~d", 1)
+    clformat("~d ~2*~d", 1,2,3,4)
 
     doctest.testmod(test, verbose=False)
     doctest.testmod(hyperspec_tests, verbose=False)
