@@ -32,6 +32,8 @@ def test():
     >>> clformat("~R dog~:[s are~; is~] here.", 3, [])
     three dogs are here.
 
+    >>> clformat("Here ~[are~;is~:;are~] ~:*~R pupp~:@P.", 3)
+    Here are three puppies.
 
     >>> clformat("foo", )
     foo

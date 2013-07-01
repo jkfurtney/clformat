@@ -52,43 +52,12 @@ expected result is found by evaluating the format expression in lisp."
     (format-test "~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%"
 		 (random-word) (random-word) (random-word)))
 
-  (format-test "~36r" 3458734089537)
-  (format-test "~3r" 3458734089537)
-  (format-test "~,,':,2:x" #x0c51f2abd521e)
-  (format-test "~r" 4)
-  (format-test "~:r" 4)
-  (format-test "~@r" 4)
-  (format-test "~:@r" 4)
-
-  )
-
-
-(with-testfile-output
- "hyperspec_tests.py"
-
- (format nil "tests from the Common Lisp hyperspec:
-	http://www.lispworks.com/documentation/HyperSpec/Body/22_ck.htm")
-
- (format-test "foo")
- (setq x 5)
- (format-test "The answer is ~D." x)
- (format-test "The answer is ~3D." x)
- (format-test "The answer is ~3,'0D." x)
- (format-test "The answer is ~:D." (expt 47 x))
- (setq y "elephant")
- (format-test "Look at the ~A!" y)
  (setq n 3)
  (format-test "~D item~:P found." n)
- (format-test "~R dog~:[s are~; is~] here." n (= n 1))
-
- (format-test "~R dog~:*~[s are~; is~:;s are~] here." n)
-
- (format-test "Here ~[are~;is~:;are~] ~:*~R pupp~:@P." n)
-
 
  (defun foo (x)
    (format-test "~6,2F|~6,2,1,'*F|~6,2,,'?F|~6F|~,2F|~F"
-	   x x x x x x))
+		x x x x x x))
  (foo 3.14159)
  (foo -3.14159)
  (foo 100.0)
@@ -97,9 +66,9 @@ expected result is found by evaluating the format expression in lisp."
 
  (defun foo (x)
    (format-test
-	   "~9,2,1,,'*E|~10,3,2,2,'?,,'$E|~
+    "~9,2,1,,'*E|~10,3,2,2,'?,,'$E|~
             ~9,3,2,-2,'%@E|~9,2E"
-	   x x x x))
+    x x x x))
  (foo 3.14159)
  (foo -3.14159)
  (foo 1100.0)

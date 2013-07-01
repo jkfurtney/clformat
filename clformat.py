@@ -638,12 +638,11 @@ directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, '~':tilda,
                        "[":conditional, "{":list_, "(":capitalization,
                        "<":justification}
 
-directive_list = "%&|tc()dboxrpfeg$as~<>{}[];^*"
+directive_list = "%&|tcdboxrpfeg$as~<>{}[]();^*"
 
 def clformat(control_string, *args):
     formatter = CLFormatter(control_string)
     print formatter(args)
-
 
 if __name__ == '__main__':
     assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4',
