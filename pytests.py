@@ -29,6 +29,10 @@ def test():
     >>> clformat("~R dog~:[s are~; is~] here.", 3, False)
     three dogs are here.
 
+    >>> clformat("~R dog~:[s are~; is~] here.", 3, [])
+    three dogs are here.
+
+
     >>> clformat("foo", )
     foo
 
@@ -213,5 +217,11 @@ def test():
     >>> clformat("The answer is ~:D.", 229345007)
     The answer is 229,345,007.
 
+    >>> clformat("~36r", 3458734089537)
+    184x4z3nl
+    >>> clformat("~3r", 3458734089537)
+    110020122121010101112111110
+    >>> clformat("~,,':,2:x", 216737651708446)
+    c5:1f:2a:bd:52:1e
 
     """

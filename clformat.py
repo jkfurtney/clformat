@@ -30,10 +30,10 @@ def parse_directive(control_string):
 
     def parse_prefix_arg_list(control_string):
         "return list of prefix args"
-        prefix_args=[None,None,None,None]
+        prefix_args=[None,None,None,None,None,None,None] # up to 7 prefix args
         arg = parse_single_prefix_arg(control_string)
         if arg: prefix_args[0]=arg
-        for i in range(1,4):
+        for i in range(1,7):
             if control_string[0]==",":
                 control_string.popleft()
                 arg = parse_single_prefix_arg(control_string)
@@ -49,7 +49,8 @@ def parse_directive(control_string):
                 at_modifier=True
         if control_string[0]==":" or control_string[0]=="@":
             if control_string.popleft()==":":
-                if colon_modifier: raise Exception("More than one : in directive")
+                if colon_modifier:
+                    raise Exception("More than one : in directive")
                 colon_modifier=True
             else:
                 if at_modifier: raise Exception("More than one @ in directive")
@@ -259,7 +260,7 @@ def pre_process_prefix_args(prefix_args, args):
     prefix list.
 
     """
-    local_prefix_args = [None,None,None,None]
+    local_prefix_args = [None,None,None,None,None,None,None]
     for i in range(len(prefix_args)):
         if prefix_args[i]=='#':
             local_prefix_args[i] = len(args)
@@ -403,22 +404,24 @@ def r(node, args, executor):
 def e(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    pass
+    width = get_prefix_int(prefix_args[0])
+    pad_char = get_prefix_char(prefix_args[5])
+    return "%e" % float(args.popleft())
 
 def f(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    pass
+    return "%f" % float(args.popleft())
 
 def g(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    pass
+    "{g}".format(float(args.popleft()))
 
 def dollar(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
-    pass
+    return "%.2f" % float(args.popleft())
 
 # special non-pair directives P ^ ~ % & *
 def p(node, args, executor):
@@ -485,17 +488,25 @@ def asterisk(node, args, executor):
 def conditional(node, args, executor):
     """
     Conditional directive ~[
-    missing : and @ functionality
     """
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
     assert directive == "["
+
     if prefix_args[0] is None:
         index = args.popleft()
-        assert type(index)==int
     else:
         index = prefix_args[0]
-        assert type(index)==int
+
+    if at_modifier:
+        if not index:
+            return ""
+    if colon_modifier:
+        if index:
+            index = 1
+        else:
+            index = 0
+
     current=0
     child_deque = deque(node.children[:])   #  a copy
     while child_deque:
@@ -620,8 +631,9 @@ def justification(node, args, executor):
 
     return ret
 
-directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, "~":tilda,
-                       's':s, '%':percent, "o":o, 'r':r, "p":p,
+directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, '~':tilda,
+                       's':s, '%':percent, 'o':o, 'r':r, 'p':p,
+                       'f':f, 'g':g, '$':dollar, 'e':e,
                        "^":circumflex, "*":asterisk, "&": ampersand,
                        "[":conditional, "{":list_, "(":capitalization,
                        "<":justification}
@@ -634,13 +646,16 @@ def clformat(control_string, *args):
 
 
 if __name__ == '__main__':
-    assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4'], \
+    assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4',
+                                                     None, None, None], \
                                                False, False)
-    assert parse_directive(deque("-2,-4:@x"))==("x", ['-2', '-4', None, None], \
+    assert parse_directive(deque("-2,-4:@x"))==("x", ['-2', '-4', None, None,
+                                                      None, None, None], \
                                                 True, True)
     assert parse_directive(deque("v,'^,#,-302:@x"))==  \
-        ("x", ['v',"'^","#",'-302'], True,True)
-    assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None], True, \
+        ("x", ['v',"'^","#",'-302', None, None, None], True,True)
+    assert parse_directive(deque("'2,-4:@x"))==("x", ["'2",'-4',None,None,
+                                                      None, None, None], True, \
                                                 True)
 
 
