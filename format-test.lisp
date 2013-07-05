@@ -1,13 +1,15 @@
-(defmacro with-testfile-output (test-file-name &body body)
-  "This macro creates a dummy Python function with doctest format
-tests. The tests are defined by the format test-macro"
+(defmacro with-python-test-output (test-file-name &body body)
+  "This macro creates a Python function with doctest tests. With in
+the body of this macro all calls to FORMAT are made into Python tests via the format-test function."
   `(with-open-file (fsc-tmp (namestring ,test-file-name)
                            :direction :output :if-exists :supersede)
      (let ((*standard-output* fsc-tmp))
        (format t "from clformat import clformat~%")
        (format t "def test():~%")
        (princ "    \"\"\" ")
-       ,@body
+       (flet ((format (&rest args)
+		      (apply #'format-test args)))
+	 ,@body)
        (princ "    \"\"\" "))))
 
 ; fix this to handle path to string and floats properly
@@ -22,7 +24,7 @@ suitable for parsing by python. Does not process nested lists"
     ((listp arg) (format nil "[~{~s~^, ~}]" arg))
     (t (format nil "~s" arg))))
 
-(defun format-test (fmt-string &rest fmt-args)
+(defun format-test (_ fmt-string &rest fmt-args)
   "Wraps calls to format to create python tests. Each call to
 format-test creates an individual Python test in doctest format. The
 expected result is found by evaluating the format expression in lisp."
@@ -33,30 +35,40 @@ expected result is found by evaluating the format expression in lisp."
     (princ result)
     (terpri)))
 
-(with-testfile-output "test.py"
+(with-python-test-output "test.py"
 
-  (format-test "| ~{~<|~%| ~,33:;~2d ~>~}|" (loop for x below 100 collect x))
+  (format t "| ~{~<|~%| ~,33:;~2d ~>~}|" (loop for x below 100 collect x))
 
   (defun random-word ()
-    (nth (random 7) '("cat" "iPhone" "rain" "thunder" "lightning" "stipulate" "pattern")))
+    (nth (random 7) '("cat" "iPhone" "rain" "thunder" "lightning"
+		      "stipulate" "pattern")))
 
   (dotimes (i 4)
-    (format-test "~5t~a ~15t~a ~25t~a~%"
+    (format t "~5t~a ~15t~a ~25t~a~%"
 		 (random-word) (random-word) (random-word)))
 
   (dotimes (i 10)
-    (format-test "~30<~a~;~a~;~a~>~%"
+    (format t "~30<~a~;~a~;~a~>~%"
 		 (random-word) (random-word) (random-word)))
 
   (dotimes (i 10)
-    (format-test "~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%"
-		 (random-word) (random-word) (random-word)))
+    (format t "~12:@<~a~>~%~12:@<~a~>~%~12:@<~a~>~%"
+		 (random-word) (random-word) (random-word))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(with-python-test-output
+ "hyperspec_tests.py"
+
+ (format nil "tests from the Common Lisp hyperspec: ~a~%"
+	 "http://www.lispworks.com/documentation/HyperSpec/Body/22_ck.htm")
 
  (setq n 3)
- (format-test "~D item~:P found." n)
+ (format t "~D item~:P found." n)
 
  (defun foo (x)
-   (format-test "~6,2F|~6,2,1,'*F|~6,2,,'?F|~6F|~,2F|~F"
+   (format t "~6,2F|~6,2,1,'*F|~6,2,,'?F|~6F|~,2F|~F"
 		x x x x x x))
  (foo 3.14159)
  (foo -3.14159)
@@ -65,7 +77,7 @@ expected result is found by evaluating the format expression in lisp."
  (foo 0.006)
 
  (defun foo (x)
-   (format-test
+   (format t
     "~9,2,1,,'*E|~10,3,2,2,'?,,'$E|~
             ~9,3,2,-2,'%@E|~9,2E"
     x x x x))
@@ -85,7 +97,7 @@ expected result is found by evaluating the format expression in lisp."
 
 
  ;; (defun foo (x)
- ;;   (format-test "~9,2,1,,'*g|~9,3,2,3,'?,,'$g|~9,3,2,0,'%g|~9,2g"
+ ;;   (format t "~9,2,1,,'*g|~9,3,2,3,'?,,'$g|~9,3,2,0,'%g|~9,2g"
  ;; 	   x x x x))
  ;; (foo 0.0314159)
  ;; (foo 0.314159)
@@ -98,19 +110,19 @@ expected result is found by evaluating the format expression in lisp."
  ;; (foo 3.14L120)
  ;; (foo 3.14L1200)
 
- (format-test "~10<foo~;bar~>")
- (format-test "~10:<foo~;bar~>")
- (format-test "~10<foobar~>")
- (format-test "~10:<foobar~>")
- (format-test "~10:@<foo~;bar~>")
- (format-test "~10@<foobar~>")
- (format-test "~10:@<foobar~>")
+ (format t "~10<foo~;bar~>")
+ (format t "~10:<foo~;bar~>")
+ (format t "~10<foobar~>")
+ (format t "~10:<foobar~>")
+ (format t "~10:@<foo~;bar~>")
+ (format t "~10@<foobar~>")
+ (format t "~10:@<foobar~>")
 
- (format-test "Written to ~A." "foo.bin")
+ (format t "Written to ~A." "foo.bin")
 
  (setq foo "Items:~#[ none~; ~A~; ~A and ~A~:;~@{~#[~; and~] ~A~^ ,~}~].")
- (format-test foo)
- (format-test foo 'foo)
- (format-test foo 'foo 'bar)
- (format-test foo 'foo 'bar 'baz)
- (format-test foo 'foo 'bar 'baz 'quux))
+ (format t foo)
+ (format t foo 'foo)
+ (format t foo 'foo 'bar)
+ (format t foo 'foo 'bar 'baz)
+ (format t foo 'foo 'bar 'baz 'quux))
