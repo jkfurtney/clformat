@@ -1,0 +1,3 @@
+include README.md MIT-LICENSE
+recursive-include clformat *.py
+recursive-include tests *.py

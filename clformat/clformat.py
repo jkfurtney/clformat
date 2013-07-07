@@ -20,7 +20,7 @@ def parse_directive(control_string):
         integer or a single character prefixed by a ' (single quote)
         """
         s="".join(control_string)
-        mobj = re.match(r"([+-]?[0-9]+|v|#|'.)",s)
+        mobj = re.match(r"([+-]?[0-9]+|V|v|#|'.)",s)
         if mobj:
             arg=mobj.group()
             for i in range(len(arg)): control_string.popleft()
@@ -628,7 +628,8 @@ def clformat(control_string, *args):
     formatter = CLFormatter(control_string)
     print formatter(args)
 
-if __name__ == '__main__':
+def test():
+
     assert parse_directive(deque(",,'.,4d"))==("d", [None, None, "'.", '4',
                                                      None, None, None], \
                                                False, False)
@@ -641,12 +642,9 @@ if __name__ == '__main__':
                                                       None, None, None], True, \
                                                 True)
 
-
     import doctest
-    import test
-    import hyperspec_tests
-    import pytests
+    from tests import pytests, test, hyperspec_tests
 
-    #doctest.testmod(test, verbose=False)
-    #doctest.testmod(hyperspec_tests, verbose=False)
+    doctest.testmod(test, verbose=False)
+    doctest.testmod(hyperspec_tests, verbose=False)
     doctest.testmod(pytests, verbose=False)
