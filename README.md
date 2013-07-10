@@ -42,8 +42,8 @@ environment; see clformat/tests/format-test.lisp
 # Status
 
 Usable, most directive are mostly working. The floating point
-directives are not fully implemented; ~t and the tabular environment
-~< ~> are not currently implemented. Error reporting could be
+directives are not fully implemented; the tabular environment
+(~< ~>) is not currently implemented. Error reporting could be
 improved.
 
 ## Format documentation

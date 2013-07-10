@@ -409,7 +409,7 @@ def dollar(node, args, executor):
     prefix_args = pre_process_prefix_args(_prefix_args, args)
     return "%.2f" % float(args.popleft())
 
-# special non-pair directives P ^ ~ % & *
+# special non-pair directives P ^ ~ % & * t
 def p(node, args, executor):
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
@@ -467,6 +467,30 @@ def asterisk(node, args, executor):
     else:
         for i in range(n): args.popleft()
     return ""
+
+def get_current_column(output):
+    column = 0
+    # the strategy is to eat backwards in the output until we reach
+    # the new line or exaust the output.
+    for string in output[::-1]:
+        for char in string[::-1]:
+            if char == '\n':
+                return column
+            else:
+                column += 1
+    return column
+
+def t(node, args, executor):
+    "@ and : modifiers missing"
+    directive, _prefix_args, colon_modifier, at_modifier = node.value
+    prefix_args = pre_process_prefix_args(_prefix_args, args)
+    #http://www.lispworks.com/documentation/HyperSpec/Body/22_cfa.htm
+    column_number = get_prefix_int(prefix_args[0], 1)
+    column_increment = get_prefix_int(prefix_args[1], 1)
+    column = get_current_column(executor.output)
+    if column < column_number:
+        return " "*(column_number-column)
+
 
 # pair directives [ { (
 def conditional(node, args, executor):
@@ -617,7 +641,7 @@ def justification(node, args, executor):
 
 directive_functions = {'a':a, 'x':x, 'd':d, 'b':b, '~':tilda,
                        's':s, '%':percent, 'o':o, 'r':r, 'p':p,
-                       'f':f, 'g':g, '$':dollar, 'e':e,
+                       'f':f, 'g':g, '$':dollar, 'e':e, 't':t,
                        "^":circumflex, "*":asterisk, "&": ampersand,
                        "[":conditional, "{":list_, "(":capitalization,
                        "<":justification}

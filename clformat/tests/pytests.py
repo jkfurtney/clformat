@@ -229,4 +229,12 @@ def test():
     >>> clformat("~,,':,2:x", 216737651708446)
     c5:1f:2a:bd:52:1e
 
+    >>> clformat("~&Name~20TExtension~{~&~A~20T~A~}", ["Joe", 3215, "Mary", 3246, "Fred", 3222, "Dave", 3232, "Joseph", 3212])
+    Name                Extension
+    Joe                 3215
+    Mary                3246
+    Fred                3222
+    Dave                3232
+    Joseph              3212
+
     """
