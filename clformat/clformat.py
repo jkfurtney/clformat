@@ -388,10 +388,21 @@ def r(node, args, executor):
 
 # floating point directives: E F G $
 def e(node, args, executor):
+    """w,d,e,k,overflowchar,padchar,exponentchar
+    """
     directive, _prefix_args, colon_modifier, at_modifier = node.value
     prefix_args = pre_process_prefix_args(_prefix_args, args)
+
     width = get_prefix_int(prefix_args[0])
+    digits_after = get_prefix_int(prefix_args[1], 1)
+    exp_digits = get_prefix_int(prefix_args[2], 1)
+    scale_factor = get_prefix_int(prefix_args[3], 1)
+    overflow_char = get_prefix_char(prefix_args[4], "")
     pad_char = get_prefix_char(prefix_args[5])
+    exp_char = get_prefix_char(prefix_args[6], "e")
+
+    # http://www.lispworks.com/documentation/HyperSpec/Body/22_ccb.htm
+    # http://docs.python.org/2/library/stdtypes.html#string-formatting
     return "%e" % float(args.popleft())
 
 def f(node, args, executor):
