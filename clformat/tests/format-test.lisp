@@ -1,3 +1,12 @@
+(defpackage :format-test
+  (:use :common-lisp)
+  (:shadow :format))
+
+(in-package :format-test)
+
+(defun format (&rest args)
+  (apply #'cl:format args))
+
 (defmacro with-python-test-output (test-file-name &body body)
   "This macro creates a Python function with doctest tests. With in
 the body of this macro all calls to FORMAT are made into Python tests
